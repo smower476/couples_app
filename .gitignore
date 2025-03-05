@@ -1,0 +1,63 @@
+# Build directories
+build/
+debug/
+release/
+*.app/
+ios-build/
+mac-build/
+
+# CMake build folder
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Qt Creator project files
+*.user
+*.pro.user
+*.qbs.user
+*.autosave
+
+# Compiled files
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode
+*.xcworkspace
+*.xcodeproj
+xcuserdata/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# VSCode
+.vscode/
+.history/
+
+# Others
+*~
+*.swp
+*.swo
+
+#API keys
+views/API*
