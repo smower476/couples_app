@@ -184,10 +184,10 @@ ApplicationWindow {
             id: dailyQuestionView
             dailyQuestion: window.dailyQuestion
             
-            onSubmitResponse: function(response) {
+            onSubmitResponse: function(response, question) {
                 var updatedResponses = window.dailyResponses.slice()
                 updatedResponses.push({
-                    question: window.dailyQuestion,
+                    question: question,
                     response: response,
                     date: new Date().toLocaleDateString()
                 })

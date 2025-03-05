@@ -12,7 +12,7 @@ Item {
     property string currentResponse: ""
     property string apiKey_: ""
     // Signals
-    signal submitResponse(string response)
+    signal submitResponse(string response, string question)
     signal getAPIKEY
 
     API_Key {
@@ -127,7 +127,7 @@ Item {
                 anchors.fill: parent
                 onClicked: {
                     if (root.currentResponse.trim() !== "") {
-                        root.submitResponse(root.currentResponse)
+                        root.submitResponse(root.currentResponse, root.dailyQuestion)
                         responseTextArea.text = ""
                         root.getDailyQuestion()
                     }
