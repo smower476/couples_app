@@ -39,6 +39,7 @@ function getQuizzQuestionAndAnswer(callback, apiKey) {
                 // Fetch 3 random words
                 fetchRandomWords(3, apiKey, function (randomWords) {
                     answers = answers.concat(randomWords); // Merge correct answer + random words
+                    shuffleArray(answers);
                     callback(question, answers); // Return both after all requests finish
                 });
             } else {
@@ -91,5 +92,12 @@ function fetchRandomWords(count, apiKey, callback) {
     }
 }
 
+// Function to shuffle an array randomly
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+    }
+}
 
 
