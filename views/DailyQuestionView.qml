@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "CallAPI.js" as CallAPI
 
 Item {
     id: root
@@ -18,33 +19,10 @@ Item {
     API_Key {
         onSendAPISIG: function(apiKey) {
             root.apiKey_ = apiKey
-            getDailyQuestion()
+            CallAPI.getDailyQuestion(function(newQuestion) {
+                        dailyQuestion = newQuestion;
+                    }, apiKey);
         }
-    }
-
-    // Function to fetch the daily question from the server
-    function getDailyQuestion() {
-            var xhr = new XMLHttpRequest();
-            // Replace with your actual API key from API Ninjas
-            var apiKey = root.apiKey_;
-            // Set the API endpoint and request headers
-            xhr.open("GET", "https://api.api-ninjas.com/v1/trivia");
-            xhr.setRequestHeader("X-Api-Key", apiKey);  // Set your API key here
-
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200) {
-                        // Parse the JSON response and update the dailyQuestion property
-                        var response = JSON.parse(xhr.responseText);
-                        dailyQuestion = response[0].question;  // Assuming the question is the first item in the array
-                    } else {
-                        console.log("Error:", xhr.status, xhr.responseText);
-                        dailyQuestion = "Not able to load";
-                    }
-                }
-            };
-
-            xhr.send();  // Send the GET request asynchronously
     }
     
     ColumnLayout {
@@ -129,7 +107,9 @@ Item {
                     if (root.currentResponse.trim() !== "") {
                         root.submitResponse(root.currentResponse, root.dailyQuestion)
                         responseTextArea.text = ""
-                        root.getDailyQuestion()
+                        CallAPI.getDailyQuestion(function(newQuestion) {
+                                    dailyQuestion = newQuestion;
+                                }, root.apiKey_);
                     }
                 }
             }
