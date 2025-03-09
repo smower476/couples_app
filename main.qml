@@ -17,16 +17,13 @@ ApplicationWindow {
     // Property to track the current view
     property string currentView: "hub"
 
-    // Data models
-    property var initialQuizzes: []
-
     property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
     // App state
     property string dailyQuestion: "What moment today made you smile?"
     property int dateIdeasIndex: 0
     property bool partnerLinked: false
-    property var quizResponses: ({})
+    property var quizResponses: []
     property var dailyResponses: []
     property var dateIdeasHistory: []
     property var currentQuiz: null
@@ -65,48 +62,63 @@ ApplicationWindow {
             quizResponses: window.quizResponses
             dailyResponses: window.dailyResponses
             dateIdeasHistory: window.dateIdeasHistory
-            initialQuizzes: window.initialQuizzes
         }
 
         // Quizzes view
         QuizzesView {
             id: quizzesView
-            initialQuizzes: window.initialQuizzes
             currentQuiz: window.currentQuiz
             currentQuizIndex: window.currentQuizIndex
             currentQuestionIndex: window.currentQuestionIndex
             quizResponses: window.quizResponses
 
             onStartQuiz: function (quiz) {
-                window.initialQuizzes = [quiz]
                 window.currentQuiz = quiz
-                window.currentQuizIndex = window.initialQuizzes.findIndex(
-                            q => q.id === quiz.id)
                 window.currentQuestionIndex = 0
             }
 
             onQuizResponse: function (question, response) {
                 // Update quiz responses
-                var updatedResponses = JSON.parse(JSON.stringify(
-                                                      window.quizResponses))
-                if (!updatedResponses[window.currentQuiz.id]) {
-                    updatedResponses[window.currentQuiz.id] = {}
+                var updatedResponses = JSON.parse(JSON.stringify(window.quizResponses))
+                //Making sure this section exists
+                if (!updatedResponses.some(q => q.id === window.currentQuiz.id)) {
+                    // Create a new quiz entry if it doesn't exist
+                    updatedResponses.push({
+                        id: window.currentQuiz.id,
+                        title: window.currentQuiz.title,
+                        questions: []
+                    });
                 }
-                updatedResponses[window.currentQuiz.id][window.currentQuestionIndex] = response
-                window.quizResponses = updatedResponses
+                // Find the quiz object based on the currentQuiz.id
+                var quizIndex = updatedResponses.findIndex(q => q.id === window.currentQuiz.id);
+
+                if (quizIndex === -1) {
+                    updatedResponses.push({
+                        id: window.currentQuiz.id,
+                        title: window.currentQuiz.title,
+                        questions: []
+                    });
+                    quizIndex = updatedResponses.length - 1;
+                }
+
+                // Ensure the questions array exists
+                if (!updatedResponses[quizIndex].questions[window.currentQuestionIndex]) {
+                    updatedResponses[quizIndex].questions[window.currentQuestionIndex] = {};
+                }
+
+                updatedResponses[quizIndex].questions[window.currentQuestionIndex][question] = response
+                console.log(response)
+                window.quizResponses = updatedResponses;
 
                 // Move to next question or quiz
                 if (window.currentQuestionIndex < window.currentQuiz.questions.length - 1) {
                     window.currentQuestionIndex++
-                } else if (window.currentQuizIndex < window.initialQuizzes.length - 1) {
-                    window.currentQuizIndex++
-                    window.currentQuestionIndex = 0
-                    window.currentQuiz = window.initialQuizzes[window.currentQuizIndex]
                 } else {
                     window.currentQuiz = null
                     window.currentQuizIndex = 0
                     window.currentQuestionIndex = 0
                 }
+                console.log(JSON.stringify(window.quizResponses))
             }
         }
 

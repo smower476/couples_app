@@ -8,7 +8,7 @@ Item {
     height: parent.height
     
     // Properties
-    property var quizResponses: ({})
+    property var quizResponses: []
     property var dailyResponses: []
     property var dateIdeasHistory: []
     property var initialQuizzes: []
@@ -65,31 +65,30 @@ Item {
                     
                     // Quiz history items
                     Repeater {
-                        model: Object.keys(root.quizResponses)
+                        model: root.quizResponses
                         
                         delegate: ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 4
                             
-                            property var quizId: modelData
-                            property var quiz: root.initialQuizzes.find(q => q.id == quizId)
-                            property var responses: root.quizResponses[quizId]
+                            property var quizId: modelData.id
+                            property var responses: root.quizResponses.find(q => q.id === quizId).questions
                             
                             Text {
-                                text: quiz ? quiz.title : "Unknown Quiz"
+                                text: modelData ? modelData.title : "Unknown Quiz"
                                 font.pixelSize: 16
                                 color: "#ec4899" // pink-500
                             }
                             
                             Repeater {
-                                model: responses ? Object.keys(responses) : []
+                                model: responses
                                 
                                 delegate: Text {
                                     Layout.fillWidth: true
                                     text: {
-                                        const questionIndex = parseInt(modelData);
-                                        const question = quiz ? quiz.questions[questionIndex].question : "Unknown";
-                                        return question + ": " + responses[modelData];
+                                        const question = Object.keys(modelData)[0]; // Treat modelData as the key
+                                        const answer = modelData[Object.keys(modelData)[0]]; // Get the answer
+                                        return question + ": " + (answer !== undefined ? answer : "No answer provided");
                                     }
                                     font.pixelSize: 14
                                     color: "white"

@@ -24,15 +24,23 @@ Item {
         onSendAPISIG: function (apiKey) {
             root.apiKey_ = apiKey
             getNewQuiz(function (quiz) {
-                root.initialQuizzes = [quiz]
-                console.log("Quiz data:",
-                            root.initialQuizzes) // ✅ Now runs after data is ready
-            })
+                root.initialQuizzes = [quiz];  // Push quiz into the array
+                console.log("Quiz pushed:", JSON.stringify(root.initialQuizzes));  // Check if quiz is valid and pushed
+                getNewQuiz(function (quiz2) {
+                    root.initialQuizzes = root.initialQuizzes.concat([quiz2]);
+                    console.log("Second quiz pushed:", JSON.stringify(root.initialQuizzes));  // Check if second quiz is valid and pushed
+
+                    // Manually trigger the update after the data is pushed
+                });
+                // Manually trigger the update after the data is pushed
+            });
+
+
         }
     }
+
     function getNewQuestion(callback, apikey) {
         CallAPI.getQuizzQuestionAndAnswer(function (question, answers) {
-            console.log("Got all answers", answers)
             callback({
                          "question": question,
                          "options": answers
@@ -41,24 +49,34 @@ Item {
     }
 
     function getNewQuiz(callback) {
-        let quiz = {
-            "id": 1,
-            "title": "Check",
-            "questions": []
-        }
-        let completedQuestions = 0
-        for (var i = 0; i < 5; i++) {
-            getNewQuestion(function (newQuestion) {
-                quiz.questions.push(newQuestion)
-                completedQuestions++
-                // Once all questions are added, call the callback
-                if (completedQuestions === 5) {
-                    console.log("New Quiz:", quiz)
-                    callback(quiz)
-                }
-            })
-        }
+        // Fetch the title first before proceeding
+        CallAPI.fetchRandomWords(2, root.apiKey_, function(q) {
+            let title = q[0];
+            console.log("Title:", title);
+
+            let quiz = {
+                "id": root.currentQuizIndex,
+                "title": title,  // Now title is set
+                "questions": []
+            };
+
+            let completedQuestions = 0;
+
+            for (var i = 0; i < 5; i++) {
+                getNewQuestion(function(newQuestion) {
+                    quiz.questions.push(newQuestion);
+                    completedQuestions++;
+
+                    // Once all questions are added, call the callback
+                    if (completedQuestions === 5) {
+                        callback(quiz);
+                    }
+                });
+            }
+            root.currentQuizIndex++;
+        });
     }
+
 
     ScrollView {
         id: scrollView
@@ -107,6 +125,7 @@ Item {
                     spacing: 16
 
                     Repeater {
+                        id: quizListRepeater
                         model: root.initialQuizzes
 
                         delegate: Rectangle {
@@ -235,3 +254,4 @@ Item {
         }
     }
 }
+
