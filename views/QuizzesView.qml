@@ -172,7 +172,8 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.margins: 16
-                Layout.preferredHeight: root.currentQuiz ? questionColumn.height + 32 : 0
+                // Layout.preferredHeight removed, let it fill height
+                Layout.fillHeight: true // Make the question container fill available vertical space
                 color: "#1f1f1f" // gray-800
                 radius: 8
                 visible: root.currentQuiz !== null
@@ -202,18 +203,18 @@ Item {
                         Layout.fillWidth: true
                     }
 
-                    GridLayout {
+                    ColumnLayout { // Changed from GridLayout
                         Layout.fillWidth: true
-                        columns: 2
-                        rowSpacing: 12
-                        columnSpacing: 12
-
+                        Layout.fillHeight: true // Make the answers layout fill vertical space
+                        spacing: 24 // Increased spacing to spread items out more
                         Repeater {
                             model: root.currentQuiz ? root.currentQuiz.questions[root.currentQuestionIndex].options : []
 
                             delegate: Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 60
+                                // Adjust preferred height based on the Text element's implicit height
+                                Layout.preferredHeight: Math.min(answerText.implicitHeight + 20, 100) // +20 for top/bottom margins
+                                Layout.maximumHeight: 100 // Keep the maximum height constraint
                                 radius: 4
 
                                 property bool isSelected: {
@@ -226,14 +227,21 @@ Item {
 
                                 color: isSelected ? "#ec4899" : "#4b5563" // pink-600 or gray-600
 
+                                // Replaced ScrollView with Text directly to test wrapping
                                 Text {
-                                    anchors.centerIn: parent
+                                    id: answerText // Use the id referenced in Layout.preferredHeight
+                                    anchors {
+                                        left: parent.left
+                                        right: parent.right
+                                        top: parent.top
+                                        margins: 10 // Apply padding directly
+                                    }
                                     text: modelData
                                     font.pixelSize: 14
                                     color: "white"
-                                    wrapMode: Text.Wrap
-                                    horizontalAlignment: Text.AlignHCenter
-                                    width: parent.width - 20
+                                    wrapMode: Text.Wrap // Enable wrapping
+                                    width: parent.width - 20 // Constrain width to parent Rectangle minus margins
+                                    horizontalAlignment: Text.AlignHCenter // Center the text horizontally
                                 }
 
                                 MouseArea {
