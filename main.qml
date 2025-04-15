@@ -6,6 +6,7 @@ import QtQuick.Layouts 1.15
 // Import local components and views
 import "components"
 import "views"
+import "views/CallAPI.js" as CallAPI // Import the JS file
 
 ApplicationWindow {
     id: window
@@ -15,7 +16,9 @@ ApplicationWindow {
     title: "Couples App"
     color: "#121212" // dark gray-900
     // Property to track the current view
-    property string currentView: "hub"
+    property string currentView: "hub" // Default view
+    property bool isLoggedIn: false // Track login status
+    property string jwtToken: "" // Store JWT token
 
     property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
@@ -51,8 +54,12 @@ ApplicationWindow {
                 return 3
             case "linker":
                 return 4
+            case "login": // Add login view index
+                return 5
+            case "profile": // Add profile view index
+                return 6
             default:
-                return 0
+                return 0 // Default to hub
             }
         }
 
@@ -169,6 +176,66 @@ ApplicationWindow {
                 window.partnerLinked = true
             }
         }
+
+        // --- Add Login/Register and Profile Views ---
+        LoginRegisterView {
+            id: loginRegisterView
+
+            // Connect to signals from LoginRegisterView
+            onLoginRequested: (username, password) => {
+                console.log("Login requested:", username);
+                CallAPI.loginUser(username, password, (success, tokenOrError) => {
+                    if (success) {
+                        console.log("Login API call successful");
+                        window.jwtToken = tokenOrError; // Store the JWT
+                        window.isLoggedIn = true;
+                        window.currentView = "hub"; // Go back to hub after login
+                    } else {
+                        console.error("Login API call failed:", tokenOrError);
+                        // TODO: Show error message to user
+                    }
+                });
+            }
+
+            onRegisterRequested: (username, password) => {
+                console.log("Register requested:", username);
+                CallAPI.registerUser(username, password, (regSuccess, regMessage) => {
+                    if (regSuccess) {
+                        console.log("Registration API call successful:", regMessage);
+                        // Automatically log in after successful registration
+                        CallAPI.loginUser(username, password, (loginSuccess, tokenOrError) => {
+                            if (loginSuccess) {
+                                console.log("Auto-login after registration successful");
+                                window.jwtToken = tokenOrError; // Store the JWT
+                                window.isLoggedIn = true;
+                                window.currentView = "hub"; // Go back to hub
+                            } else {
+                                console.error("Auto-login after registration failed:", tokenOrError);
+                                // Stay on login page, maybe show error
+                            }
+                        });
+                    } else {
+                        console.error("Registration API call failed:", regMessage);
+                        // TODO: Show error message to user
+                    }
+                });
+            }
+        }
+
+        ProfileView {
+            id: profileView
+            // Pass JWT to profile view (placeholder for actual username)
+            displayInfo: "Token: " + (window.jwtToken ? window.jwtToken.substring(0, 10) + "..." : "[No Token]") // Assign to the exposed property
+
+            // Connect to signal from ProfileView
+            onLogoutRequested: () => {
+                console.log("Logout requested");
+                window.jwtToken = ""; // Clear the token
+                window.isLoggedIn = false;
+                window.currentView = "hub"; // Go back to hub after logout
+            }
+        }
+        // --- End Added Views ---
     }
 
     // Bottom navigation
@@ -182,7 +249,22 @@ ApplicationWindow {
         activeTab: currentView
 
         onTabSelected: function (tabName) {
-            window.currentView = tabName
+            // Only allow navigation via bottom bar if logged in or to hub
+            if (window.isLoggedIn || tabName === "hub") {
+                 window.currentView = tabName
+            } else {
+                // If not logged in and trying to access other tabs, redirect to login
+                window.currentView = "login"
+            }
+        }
+    }
+
+    // Function to handle profile button click from HubView
+    function handleProfileClick() {
+        if (window.isLoggedIn) {
+            window.currentView = "profile"
+        } else {
+            window.currentView = "login"
         }
     }
 }

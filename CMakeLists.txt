@@ -45,6 +45,8 @@ qt_add_resources(${PROJECT_NAME} "qml_resources"
         views/DailyQuestionView.qml
         views/DateIdeasView.qml
         views/LinkerView.qml
+        views/ProfileView.qml
+        views/LoginRegisterView.qml
         views/CallAPI.js
         styles.qss
 )

@@ -186,13 +186,16 @@ Item {
                         top: parent.top
                         margins: 16
                     }
-                    spacing: 16
 
                     Text {
                         text: "Question " + (root.currentQuestionIndex + 1) + " of "
                               + (root.currentQuiz ? root.currentQuiz.questions.length : 0)
                         font.pixelSize: 16
                         color: "#9ca3af" // gray-400
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
                     }
 
                     Text {

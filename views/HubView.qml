@@ -36,8 +36,31 @@ Item {
                     font.bold: true
                     color: "white"
                 }
+
+                // --- Add Profile Button ---
+                Text {
+                    id: profileButton
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        rightMargin: 16 // Add some margin
+                    }
+                    text: "👤" // Placeholder icon/text
+                    font.pixelSize: 24
+                    color: "white"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            // Call the function defined in main.qml
+                            window.handleProfileClick()
+                        }
+                    }
+                }
+                // --- End Profile Button ---
             }
-            
+
             // Quiz History Section
             Rectangle {
                 Layout.fillWidth: true
