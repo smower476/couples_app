@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "CallAPI.js" as CallAPI // Import the API functions
 
 Item {
     id: loginRegisterRoot
@@ -8,10 +9,32 @@ Item {
     height: parent.height
 
     // Signals to notify the parent (main.qml)
-    signal loginRequested(string username, string password)
-    signal registerRequested(string username, string password)
+    // Signal for login result (now includes username)
+    signal loginAttemptFinished(bool success, string tokenOrError, string username)
+    // Signal to navigate to registration page
+    signal navigateToRegisterRequested()
+
+    // Property to hold status message
+    property string statusMessage: ""
+    // Removed showConfirmPassword property
+
+    // --- Validation Functions ---
+    function isValidLogin(login) {
+        // Regex: ^[a-zA-Z0-9_]{3,20}$
+        const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
+        return loginRegex.test(login);
+    }
+
+    function isValidPassword(password) {
+        // Regex: ^[a-zA-Z0-9@#%*!?]{8,32}$
+        // Allows letters, numbers, and @#%*!? symbols, length 8-32
+        const passwordRegex = /^[a-zA-Z0-9@#%*!?]{8,32}$/;
+        return passwordRegex.test(password);
+    }
+    // --- End Validation Functions ---
 
     ColumnLayout {
+        id: formLayout // Give the layout an id
         anchors.centerIn: parent
         width: parent.width * 0.8
         spacing: 20
@@ -51,6 +74,19 @@ Item {
             placeholderTextColor: "#9ca3af" // gray-400
         }
 
+        // Removed Confirm Password Field
+
+        // Status Message Area
+        Text {
+            id: statusText
+            Layout.fillWidth: true
+            text: loginRegisterRoot.statusMessage
+            color: statusMessage.startsWith("Error") ? "red" : "lightgreen" // Color based on message
+            wrapMode: Text.Wrap
+            horizontalAlignment: Text.AlignHCenter
+            visible: statusMessage !== "" // Only show if there's a message
+        }
+
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -60,9 +96,32 @@ Item {
                 Layout.fillWidth: true
                 text: "Login"
                 onClicked: {
-                    console.log("Login clicked:", usernameInput.text)
-                    // Emit signal with credentials
-                    loginRegisterRoot.loginRequested(usernameInput.text, passwordInput.text)
+                    console.log("Login clicked:", usernameInput.text);
+                    loginRegisterRoot.statusMessage = ""; // Clear previous message
+                    // Removed showConfirmPassword = false
+
+                    // --- Add Login Validation ---
+                    if (!isValidLogin(usernameInput.text)) {
+                        loginRegisterRoot.statusMessage = "Error: Invalid username format (3-20 chars, a-z, A-Z, 0-9, _)";
+                        return;
+                    }
+                    // --- End Login Validation ---
+
+                    loginRegisterRoot.statusMessage = "Logging in..."; // Show status
+                    CallAPI.loginUser(usernameInput.text, passwordInput.text, (success, tokenOrError) => {
+                        if (success) {
+                            // Clear fields on success? Optional.
+                            // usernameInput.text = ""
+                            // passwordInput.text = ""
+                            loginRegisterRoot.statusMessage = "Login Successful!";
+                            // Emit success with token AND username
+                            loginRegisterRoot.loginAttemptFinished(true, tokenOrError, usernameInput.text);
+                        } else {
+                            loginRegisterRoot.statusMessage = "Error: " + tokenOrError;
+                            // Emit failure (username doesn't matter here)
+                            loginRegisterRoot.loginAttemptFinished(false, tokenOrError, usernameInput.text);
+                        }
+                    });
                 }
             }
 
@@ -71,9 +130,10 @@ Item {
                 Layout.fillWidth: true
                 text: "Register"
                 onClicked: {
-                    console.log("Register clicked:", usernameInput.text)
-                    // Emit signal with credentials
-                    loginRegisterRoot.registerRequested(usernameInput.text, passwordInput.text)
+                    console.log("Navigate to Register clicked");
+                    loginRegisterRoot.statusMessage = ""; // Clear status
+                    // Emit signal to navigate
+                    loginRegisterRoot.navigateToRegisterRequested();
                 }
             }
         }

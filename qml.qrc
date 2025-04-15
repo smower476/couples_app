@@ -11,6 +11,7 @@
         <file>views/LinkerView.qml</file>
         <file>views/LoginRegisterView.qml</file>
         <file>views/ProfileView.qml</file>
+        <file>views/RegisterView.qml</file>
         <file>views/CallAPI.js</file>
         <file>styles.qss</file>
     </qresource>

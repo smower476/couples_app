@@ -19,6 +19,7 @@ ApplicationWindow {
     property string currentView: "hub" // Default view
     property bool isLoggedIn: false // Track login status
     property string jwtToken: "" // Store JWT token
+    property string currentUsername: "" // Store username after login/register
 
     property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
@@ -58,6 +59,8 @@ ApplicationWindow {
                 return 5
             case "profile": // Add profile view index
                 return 6
+            case "register": // Add register view index
+                return 7
             default:
                 return 0 // Default to hub
             }
@@ -171,6 +174,7 @@ ApplicationWindow {
         LinkerView {
             id: linkerView
             partnerLinked: window.partnerLinked
+            jwtToken: window.jwtToken // Pass the token from main window
 
             onLinkPartner: {
                 window.partnerLinked = true
@@ -182,60 +186,71 @@ ApplicationWindow {
             id: loginRegisterView
 
             // Connect to signals from LoginRegisterView
-            onLoginRequested: (username, password) => {
-                console.log("Login requested:", username);
-                CallAPI.loginUser(username, password, (success, tokenOrError) => {
-                    if (success) {
-                        console.log("Login API call successful");
-                        window.jwtToken = tokenOrError; // Store the JWT
-                        window.isLoggedIn = true;
-                        window.currentView = "hub"; // Go back to hub after login
-                    } else {
-                        console.error("Login API call failed:", tokenOrError);
-                        // TODO: Show error message to user
-                    }
-                });
+            onLoginAttemptFinished: (success, tokenOrError, username) => { // Add username parameter
+                if (success) {
+                    console.log("Login finished successfully in main.qml");
+                    window.jwtToken = tokenOrError; // Store the JWT
+                    window.currentUsername = username; // Use username from signal
+                    window.isLoggedIn = true;
+                    window.currentView = "hub"; // Go back to hub after login
+                } else {
+                    console.error("Login finished with error in main.qml:", tokenOrError);
+                    // Error is shown in LoginRegisterView
+                }
             }
 
-            onRegisterRequested: (username, password) => {
-                console.log("Register requested:", username);
-                CallAPI.registerUser(username, password, (regSuccess, regMessage) => {
-                    if (regSuccess) {
-                        console.log("Registration API call successful:", regMessage);
-                        // Automatically log in after successful registration
-                        CallAPI.loginUser(username, password, (loginSuccess, tokenOrError) => {
-                            if (loginSuccess) {
-                                console.log("Auto-login after registration successful");
-                                window.jwtToken = tokenOrError; // Store the JWT
-                                window.isLoggedIn = true;
-                                window.currentView = "hub"; // Go back to hub
-                            } else {
-                                console.error("Auto-login after registration failed:", tokenOrError);
-                                // Stay on login page, maybe show error
-                            }
-                        });
-                    } else {
-                        console.error("Registration API call failed:", regMessage);
-                        // TODO: Show error message to user
-                    }
-                });
+            onNavigateToRegisterRequested: () => {
+                console.log("Navigate to Register requested");
+                window.currentView = "register"; // Change view to register page
             }
         }
 
         ProfileView {
             id: profileView
-            // Pass JWT to profile view (placeholder for actual username)
-            displayInfo: "Token: " + (window.jwtToken ? window.jwtToken.substring(0, 10) + "..." : "[No Token]") // Assign to the exposed property
+            // Pass username to profile view
+            displayInfo: "Username: " + (window.currentUsername ? window.currentUsername : "[Not Logged In]")
 
             // Connect to signal from ProfileView
             onLogoutRequested: () => {
                 console.log("Logout requested");
                 window.jwtToken = ""; // Clear the token
+                window.currentUsername = ""; // Clear username
                 window.isLoggedIn = false;
                 window.currentView = "hub"; // Go back to hub after logout
             }
         }
-        // --- End Added Views ---
+
+        // --- Add Register View ---
+        RegisterView {
+            id: registerView
+
+            onRegistrationComplete: (success, result) => {
+                if (success) {
+                    console.log("Registration finished successfully in main.qml");
+                    // Result is expected to be JSON string: {token: "...", username: "..."}
+                    try {
+                        var data = JSON.parse(result);
+                        window.jwtToken = data.token;
+                        window.currentUsername = data.username;
+                        window.isLoggedIn = true;
+                        window.currentView = "hub"; // Go to hub after successful registration
+                    } catch (e) {
+                        console.error("Error parsing registration result:", e, result);
+                        // Fallback or show error? For now, go to login
+                        window.currentView = "login";
+                    }
+                } else {
+                    console.error("Registration finished with error in main.qml:", result);
+                    // Error is shown in RegisterView, stay on register page
+                }
+            }
+
+            onBackToLoginRequested: () => {
+                console.log("Back to Login requested");
+                window.currentView = "login"; // Go back to login page
+            }
+        }
+        // --- End Register View ---
     }
 
     // Bottom navigation

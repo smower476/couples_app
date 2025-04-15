@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "CallAPI.js" as CallAPI // Import the API functions
 
 Item {
     id: root
@@ -10,9 +11,45 @@ Item {
     // Properties
     property bool partnerLinked: false
     property string inviteCode: ""
-    
+    property string jwtToken: "" // Add property to hold the JWT token
+    property string userLinkCode: "Loading..." // Property to hold the fetched link code
+
     // Signals
     signal linkPartner()
+
+    // Function to fetch the link code
+    function fetchLinkCode() {
+        if (jwtToken !== "") {
+            console.log("Fetching link code with token:", jwtToken)
+            CallAPI.getLinkCode(jwtToken, function(success, result) {
+                if (success) {
+                    console.log("Link code received:", result)
+                    userLinkCode = result;
+                } else {
+                    console.error("Failed to get link code:", result);
+                    userLinkCode = "Error"; // Display error in UI
+                }
+            });
+        } else {
+            console.log("JWT token not available yet for fetching link code.");
+            userLinkCode = "Login Required"; // Indicate user needs to be logged in
+        }
+    }
+
+    // Fetch the code when the component is ready AND token is available
+    Component.onCompleted: {
+        fetchLinkCode();
+    }
+
+    // Also fetch if the token becomes available later
+    Connections {
+        target: root
+        function onJwtTokenChanged() {
+            if (userLinkCode === "Loading..." || userLinkCode === "Login Required" || userLinkCode === "Error") {
+                 fetchLinkCode();
+            }
+        }
+    }
     
     ColumnLayout {
         anchors {
@@ -124,7 +161,8 @@ Item {
                         }
                         
                         Text {
-                            text: "LOVE-2025"
+                            id: linkCodeText
+                            text: root.userLinkCode // Bind to the userLinkCode property
                             font.pixelSize: 24
                             font.bold: true
                             color: "#ec4899" // pink-600
