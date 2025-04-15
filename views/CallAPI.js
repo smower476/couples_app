@@ -175,6 +175,29 @@ xhr.onreadystatechange = function() {
 xhr.send(params);
 }
 
+function linkUsers(token, linkCode, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/link-users";
+    var params = "token=" + encodeURIComponent(token) + "&link_code=" + encodeURIComponent(linkCode);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Users linked successfully:", xhr.responseText);
+                callback(true, xhr.responseText); // Success
+            } else {
+                console.error("Link users error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to link users: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.send(params);
+}
+
 // --- End Login/Register Functions ---
 
 

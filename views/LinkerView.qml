@@ -132,8 +132,24 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            if (root.inviteCode.trim() !== "") {
-                                root.linkPartner()
+                            var codeToLink = root.inviteCode.trim();
+                            if (codeToLink !== "" && root.jwtToken !== "") {
+                                console.log("Attempting to link with code:", codeToLink);
+                                CallAPI.linkUsers(root.jwtToken, codeToLink, function(success, result) {
+                                    if (success) {
+                                        console.log("Successfully linked partners:", result);
+                                        root.linkPartner(); // Emit signal on successful API call
+                                    } else {
+                                        console.error("Failed to link partners:", result);
+                                        // TODO: Show error message to user in the UI
+                                    }
+                                });
+                            } else if (root.jwtToken === "") {
+                                console.error("Cannot link: User not logged in (no JWT token).");
+                                // TODO: Show message: "Please log in first."
+                            } else {
+                                console.log("Cannot link: Invite code field is empty.");
+                                // TODO: Show message: "Please enter partner's code."
                             }
                         }
                     }
