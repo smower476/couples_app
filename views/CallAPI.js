@@ -20,6 +20,56 @@ function getDailyQuestion(callback, apiKey) {
 }
 
 
+function getDailyQuizId(token, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/get-daily-quiz";
+    var params = "token=" + encodeURIComponent(token);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Daily Quiz ID received:", xhr.responseText);
+                callback(true, xhr.responseText); // Success, return quiz ID
+            } else {
+                console.error("Get daily quiz ID error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to get daily quiz ID: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.send(params);
+}
+
+function getQuizContent(token, quizId, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/get-quiz-content";
+    var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Quiz content received:", xhr.responseText);
+                callback(true, JSON.parse(xhr.responseText)); // Success, return quiz content
+            } else {
+                console.error("Get quiz content error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to get quiz content: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.send(params);
+}
+
+
+
+
+
 function getQuizzQuestionAndAnswer(callback, apiKey) {
     var xhr = new XMLHttpRequest();
     var answers = [];
@@ -102,7 +152,7 @@ function shuffleArray(array) {
 
 // --- Login/Register Functions ---
 
-const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
+const API_BASE_URL = "http://localhost:8080"; // Define base URL
 
 function registerUser(username, password, callback) {
     var xhr = new XMLHttpRequest();
@@ -197,6 +247,32 @@ function linkUsers(token, linkCode, callback) {
 
     xhr.send(params);
 }
+
+// --- Quiz Functions ---
+
+function addQuiz(token, quizData, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/add-quiz?token=" + encodeURIComponent(token);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Quiz added successfully:", xhr.responseText);
+                callback(true, xhr.responseText); // Success
+            } else {
+                console.error("Add quiz error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to add quiz: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.send(JSON.stringify(quizData));
+}
+
+// --- End Quiz Functions ---
 
 // --- End Login/Register Functions ---
 

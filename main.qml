@@ -21,19 +21,22 @@ ApplicationWindow {
     property string jwtToken: "" // Store JWT token
     property string currentUsername: "" // Store username after login/register
 
+    // Signal emitted after successful login and token is set
+    signal loginSuccessful()
+
     property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
     // App state
     property string dailyQuestion: "What moment today made you smile?"
     property int dateIdeasIndex: 0
     property bool partnerLinked: false
-    property var quizResponses: []
+    property var quizResponses: [] // Holds responses like [{id: "quiz1", title: "Quiz 1", questions: [{ "Q1": "A1"}, {"Q2": "A2"}]}]
     property var dailyResponses: []
     property var dateIdeasHistory: []
-    property var currentQuiz: null
-    property int currentQuizIndex: 0
-    property int currentQuestionIndex: 0
-
+    property var currentQuiz: null // Holds the currently active quiz object fetched from QuizzesView
+    // property int currentQuizIndex: 0 // No longer needed, only one quiz active at a time
+    property int currentQuestionIndex: 0 // Index of the question being displayed within currentQuiz
+    property var currentQuizResultData: null // Holds the specific quiz response object to show in results view
     // Stack view for different screens
     StackLayout {
         id: stackLayout
@@ -61,6 +64,8 @@ ApplicationWindow {
                 return 6
             case "register": // Add register view index
                 return 7
+            case "quiz-results": // Add quiz results view index
+                return 8
             default:
                 return 0 // Default to hub
             }
@@ -77,58 +82,90 @@ ApplicationWindow {
         // Quizzes view
         QuizzesView {
             id: quizzesView
-            currentQuiz: window.currentQuiz
-            currentQuizIndex: window.currentQuizIndex
-            currentQuestionIndex: window.currentQuestionIndex
-            quizResponses: window.quizResponses
+            // Pass state properties from main.qml (window) to QuizzesView's properties
+            quizData: window.currentQuiz // Pass window.currentQuiz to QuizzesView.quizData
+            questionIndex: window.currentQuestionIndex // Pass window.currentQuestionIndex to QuizzesView.questionIndex
+            responses: window.quizResponses // Pass window.quizResponses to QuizzesView.responses
+            jwtToken: window.jwtToken // Pass the JWT token
 
-            onStartQuiz: function (quiz) {
-                window.currentQuiz = quiz
-                window.currentQuestionIndex = 0
+            // Handle the signal emitted by QuizzesView when data is fetched
+            onQuizFetched: function(fetchedQuizData) {
+                console.log("main.qml: Quiz fetched signal received.");
+                if (fetchedQuizData) {
+                    window.currentQuiz = fetchedQuizData;
+                    window.currentQuestionIndex = 0; // Reset index for new quiz
+                    // Ensure responses array has an entry for this quiz, create if not
+                    var existingResponseIndex = window.quizResponses.findIndex(r => r.id === fetchedQuizData.id);
+                    if (existingResponseIndex === -1) {
+                        var newResponses = window.quizResponses.slice(); // Create a copy
+                        newResponses.push({
+                            id: fetchedQuizData.id,
+                            title: fetchedQuizData.title,
+                            questions: [] // Initialize empty questions array
+                        });
+                        window.quizResponses = newResponses; // Update the main state
+                        console.log("main.qml: Added new response entry for quiz:", fetchedQuizData.id);
+                    }
+                } else {
+                    console.error("main.qml: Quiz fetch failed.");
+                    window.currentQuiz = null; // Clear quiz if fetch failed
+                }
             }
 
-            onQuizResponse: function (question, response) {
-                // Update quiz responses
-                var updatedResponses = JSON.parse(JSON.stringify(window.quizResponses))
-                //Making sure this section exists
-                if (!updatedResponses.some(q => q.id === window.currentQuiz.id)) {
-                    // Create a new quiz entry if it doesn't exist
-                    updatedResponses.push({
-                        id: window.currentQuiz.id,
-                        title: window.currentQuiz.title,
-                        questions: []
-                    });
-                }
-                // Find the quiz object based on the currentQuiz.id
-                var quizIndex = updatedResponses.findIndex(q => q.id === window.currentQuiz.id);
-
-                if (quizIndex === -1) {
-                    updatedResponses.push({
-                        id: window.currentQuiz.id,
-                        title: window.currentQuiz.title,
-                        questions: []
-                    });
-                    quizIndex = updatedResponses.length - 1;
+            // Handle the signal emitted by QuizzesView when an answer is selected
+            onQuizResponse: function (questionText, selectedAnswer) {
+                console.log("main.qml: Quiz response received:", questionText, selectedAnswer);
+                // Ensure there's a current quiz loaded
+                if (!window.currentQuiz) {
+                    console.error("main.qml: Received quiz response but no current quiz is set.");
+                    return;
                 }
 
-                // Ensure the questions array exists
-                if (!updatedResponses[quizIndex].questions[window.currentQuestionIndex]) {
-                    updatedResponses[quizIndex].questions[window.currentQuestionIndex] = {};
+                // --- Update quizResponses state in main.qml ---
+                var responsesCopy = JSON.parse(JSON.stringify(window.quizResponses)); // Deep copy
+                var quizId = window.currentQuiz.id;
+                var questionIdx = window.currentQuestionIndex;
+
+                // Find the response object for the current quiz
+                var quizResponseObj = responsesCopy.find(r => r.id === quizId);
+
+                // This should exist because onQuizFetched creates it, but check just in case
+                if (!quizResponseObj) {
+                     console.error("main.qml: Response object not found for quiz ID:", quizId);
+                     // Optionally create it here if needed, though it indicates a logic error elsewhere
+                     quizResponseObj = { id: quizId, title: window.currentQuiz.title, questions: [] };
+                     responsesCopy.push(quizResponseObj);
                 }
 
-                updatedResponses[quizIndex].questions[window.currentQuestionIndex][question] = response
-                console.log(response)
-                window.quizResponses = updatedResponses;
+                // Ensure the questions array is long enough (fill with nulls if needed)
+                while (quizResponseObj.questions.length <= questionIdx) {
+                    quizResponseObj.questions.push(null);
+                }
 
-                // Move to next question or quiz
-                if (window.currentQuestionIndex < window.currentQuiz.questions.length - 1) {
-                    window.currentQuestionIndex++
+                // Store the response for the current question index
+                // Format: { "Question Text": "Selected Answer" }
+                quizResponseObj.questions[questionIdx] = { [questionText]: selectedAnswer };
+
+                // Update the main state property - this triggers UI updates in QuizzesView
+                window.quizResponses = responsesCopy;
+                console.log("main.qml: Updated quizResponses:", JSON.stringify(window.quizResponses));
+
+
+                // --- Move to next question or finish quiz ---
+                if (questionIdx < window.currentQuiz.questions.length - 1) {
+                    window.currentQuestionIndex++; // Go to next question
+                    console.log("main.qml: Moving to next question index:", window.currentQuestionIndex);
                 } else {
-                    window.currentQuiz = null
-                    window.currentQuizIndex = 0
-                    window.currentQuestionIndex = 0
+                    console.log("main.qml: Quiz finished!");
+                    // Quiz finished, prepare data for results view and navigate
+                    var finishedQuizId = window.currentQuiz.id;
+                    var finalResponses = window.quizResponses.find(r => r.id === finishedQuizId);
+                    window.currentQuizResultData = finalResponses ? finalResponses : { id: finishedQuizId, title: "Quiz Results", questions: [] }; // Pass the responses
+                    window.currentQuiz = null; // Clear the active quiz
+                    window.currentQuestionIndex = 0; // Reset index
+                    window.currentView = "quiz-results"; // Navigate to results view
+                    console.log("main.qml: Navigating to quiz-results view with data:", JSON.stringify(window.currentQuizResultData));
                 }
-                console.log(JSON.stringify(window.quizResponses))
             }
         }
 
@@ -192,6 +229,7 @@ ApplicationWindow {
                     window.jwtToken = tokenOrError; // Store the JWT
                     window.currentUsername = username; // Use username from signal
                     window.isLoggedIn = true;
+                    window.loginSuccessful(); // Emit signal *after* token and status are set
                     window.currentView = "hub"; // Go back to hub after login
                 } else {
                     console.error("Login finished with error in main.qml:", tokenOrError);
@@ -251,6 +289,21 @@ ApplicationWindow {
             }
         }
         // --- End Register View ---
+
+        // --- Add Quiz Results View ---
+        QuizResultsView {
+            id: quizResultsView
+            // Pass the specific quiz result data from main.qml
+            completedQuizResponses: window.currentQuizResultData
+
+            // Handle signal from QuizResultsView when user wants to dismiss it
+            onResultsDismissed: () => {
+                console.log("main.qml: Quiz results dismissed, returning to hub.");
+                window.currentQuizResultData = null; // Clear the result data
+                window.currentView = "hub"; // Go back to hub view
+            }
+        }
+        // --- End Quiz Results View ---
     }
 
     // Bottom navigation

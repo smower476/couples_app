@@ -8,37 +8,94 @@ Item {
     width: parent.width
     height: parent.height
 
-    // Properties
-    property var initialQuizzes: []
-    property var currentQuiz: null
-    property int currentQuizIndex: 0
-    property int currentQuestionIndex: 0
-    property var quizResponses: ({})
+    // Properties passed from main.qml
+    property var quizData: null // Changed from alias to regular property
+    property int questionIndex: 0 // Changed from alias to regular property
+    property var responses: [] // Changed from alias to regular property
+
+    // Internal properties
     property string apiKey_: ""
+    property string jwtToken: ""
 
     // Signals
-    signal startQuiz(var quiz)
-    signal quizResponse(string question, string response)
+    signal quizFetched(var quizData) // Emitted when quiz data is loaded
+    signal quizResponse(string question, string response) // Emitted when an answer is clicked
 
-    API_Key {
-        onSendAPISIG: function (apiKey) {
-            root.apiKey_ = apiKey
-            getNewQuiz(function (quiz) {
-                root.initialQuizzes = [quiz];  // Push quiz into the array
-                console.log("Quiz pushed:", JSON.stringify(root.initialQuizzes));  // Check if quiz is valid and pushed
-                getNewQuiz(function (quiz2) {
-                    root.initialQuizzes = root.initialQuizzes.concat([quiz2]);
-                    console.log("Second quiz pushed:", JSON.stringify(root.initialQuizzes));  // Check if second quiz is valid and pushed
-
-                    // Manually trigger the update after the data is pushed
-                });
-                // Manually trigger the update after the data is pushed
-            });
-
-
+    // Component initialization logic
+    Component.onCompleted: {
+        // Fetch the daily quiz when the component is loaded and token is available
+        // Assuming jwtToken is populated by main.qml before this view is shown
+        if (root.jwtToken) {
+            fetchDailyQuiz();
+        } else {
+            // Handle case where token is not yet available (e.g., wait for a signal)
+            console.log("QuizzesView: JWT token not available on completion.");
+            // We might need a signal from main.qml when login completes
+            // For now, let's assume it's set. If not, this won't fetch.
         }
     }
 
+    // Connections to react to property changes on this component (root)
+    Connections {
+        target: root
+
+        // Fetch quiz when the jwtToken property changes (e.g., after login)
+        function onJwtTokenChanged() {
+            console.log("QuizzesView: jwtToken changed. Fetching quiz.");
+            // Fetch only if the token is now valid (not empty)
+            if (root.jwtToken) {
+                fetchDailyQuiz();
+            } else {
+                // Token cleared (logout), main.qml should handle clearing quizData if needed
+                // root.initialQuizzes = []; // Removed
+                console.log("QuizzesView: jwtToken cleared.");
+            }
+        }
+    }
+
+    // Function to fetch and process the daily quiz
+    function fetchDailyQuiz() {
+        console.log("QuizzesView: Fetching daily quiz with token:", root.jwtToken);
+        getNewQuiz(function (quizContent) {
+            // Check if quizContent and quiz_content array exist and have data
+            if (quizContent && quizContent.quiz_content && quizContent.quiz_content.length > 0) {
+                // Transform the fetched quiz content into the format expected by the UI
+                var transformedQuiz = {
+                    // Assuming the API response doesn't provide a single ID/Title for the whole quiz
+                    // Using a default title or deriving one if possible. Let's use the first question's ID as quiz ID for uniqueness.
+                    id: quizContent.quiz_content[0].content_id || "daily_quiz_" + new Date().getTime(), // Use first question ID or timestamp
+                    title: quizContent.quiz_name || "Daily Quiz", // Use quiz_name if available from API, else default
+                    questions: quizContent.quiz_content.map((item, index) => {
+                        return {
+                            question: item.content_data,
+                            // Map answers to simple strings for options
+                            options: item.answers.map(ans => ans.answer_content),
+                            // Store original answer details if needed later for checking (optional)
+                            _answers: item.answers,
+                            _content_id: item.content_id
+                        };
+                    })
+                };
+                console.log("Transformed Quiz:", JSON.stringify(transformedQuiz));
+                // Emit signal with fetched data instead of setting internal state
+                root.quizFetched(transformedQuiz);
+                // root.currentQuiz = transformedQuiz; // Removed
+                // root.currentQuestionIndex = 0; // Removed
+                // root.quizResponses = {}; // Removed
+                // root.initialQuizzes = [transformedQuiz]; // Removed
+            } else {
+                console.error("Failed to process quiz content or quiz_content is empty:", quizContent);
+                // Emit signal with null data to indicate failure
+                root.quizFetched(null);
+                // root.currentQuiz = null; // Removed
+                // root.initialQuizzes = []; // Removed
+                // Handle error: show message to user? (Maybe main.qml handles this)
+            }
+        });
+    }
+
+    // Remove the old getNewQuestion function as it's no longer needed
+    /*
     function getNewQuestion(callback, apikey) {
         CallAPI.getQuizzQuestionAndAnswer(function (question, answers) {
             callback({
@@ -47,33 +104,25 @@ Item {
                      })
         }, root.apiKey_)
     }
+    */
 
     function getNewQuiz(callback) {
-        // Fetch the title first before proceeding
-        CallAPI.fetchRandomWords(2, root.apiKey_, function(q) {
-            let title = q[0];
-            console.log("Title:", title);
-
-            let quiz = {
-                "id": root.currentQuizIndex,
-                "title": title,  // Now title is set
-                "questions": []
-            };
-
-            let completedQuestions = 0;
-
-            for (var i = 0; i < 5; i++) {
-                getNewQuestion(function(newQuestion) {
-                    quiz.questions.push(newQuestion);
-                    completedQuestions++;
-
-                    // Once all questions are added, call the callback
-                    if (completedQuestions === 5) {
-                        callback(quiz);
+        CallAPI.getDailyQuizId(root.jwtToken, function(success, quizId) {
+            if (success) {
+                console.log("Daily Quiz ID:", quizId);
+                CallAPI.getQuizContent(root.jwtToken, quizId, function(success, quizContent) {
+                    if (success) {
+                        console.log("Quiz content:", quizContent);
+                        callback(quizContent); // Pass the quiz content to the callback
+                    } else {
+                        console.error("Failed to get quiz content:", quizContent);
+                        // Handle the error appropriately
                     }
                 });
+            } else {
+                console.error("Failed to get daily quiz ID:", quizId);
+                // Handle the error appropriately
             }
-            root.currentQuizIndex++;
         });
     }
 
@@ -94,81 +143,19 @@ Item {
                 Layout.preferredHeight: 60
                 color: "transparent"
 
+                // Combined Header Text - Shows title when quiz is loaded
                 Text {
                     anchors.centerIn: parent
-                    text: "🤔 Relationship Quizzes"
+                    text: root.quizData ? root.quizData.title : "🤔 Loading Quiz..." // Use property quizData
                     font.pixelSize: 24
                     font.bold: true
                     color: "white"
-                    visible: !root.currentQuiz
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.currentQuiz ? root.currentQuiz.title : ""
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "white"
-                    visible: root.currentQuiz !== null
                 }
             }
 
-            // Quiz list (visible when no quiz is selected)
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: quizListColumn.height
-                visible: !root.currentQuiz
+            // Quiz list removed - Quiz starts automatically
 
-                ColumnLayout {
-                    id: quizListColumn
-                    width: parent.width
-                    spacing: 16
-
-                    Repeater {
-                        id: quizListRepeater
-                        model: root.initialQuizzes
-
-                        delegate: Rectangle {
-                            Layout.fillWidth: true
-                            Layout.margins: 16
-                            height: quizItemColumn.height + 32
-                            color: "#1f1f1f" // gray-800
-                            radius: 8
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.startQuiz(modelData)
-                            }
-
-                            ColumnLayout {
-                                id: quizItemColumn
-                                anchors {
-                                    left: parent.left
-                                    right: parent.right
-                                    top: parent.top
-                                    margins: 16
-                                }
-                                spacing: 8
-
-                                Text {
-                                    text: modelData.title
-                                    font.pixelSize: 18
-                                    font.bold: true
-                                    color: "white"
-                                }
-
-                                Text {
-                                    text: "Tap to start quiz"
-                                    font.pixelSize: 14
-                                    color: "#9ca3af" // gray-400
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Quiz question (visible when a quiz is selected)
+            // Quiz question (visible when a quiz is loaded)
             Rectangle {
                 Layout.fillWidth: true
                 Layout.margins: 16
@@ -176,7 +163,7 @@ Item {
                 Layout.fillHeight: true // Make the question container fill available vertical space
                 color: "#1f1f1f" // gray-800
                 radius: 8
-                visible: root.currentQuiz !== null
+                visible: root.quizData !== null // Use property quizData
 
                 ColumnLayout {
                     id: questionColumn
@@ -188,8 +175,9 @@ Item {
                     }
 
                     Text {
-                        text: "Question " + (root.currentQuestionIndex + 1) + " of "
-                              + (root.currentQuiz ? root.currentQuiz.questions.length : 0)
+                        // Use properties questionIndex and quizData
+                        text: "Question " + (root.questionIndex + 1) + " of "
+                              + (root.quizData ? root.quizData.questions.length : 0)
                         font.pixelSize: 16
                         color: "#9ca3af" // gray-400
                     }
@@ -199,7 +187,8 @@ Item {
                     }
 
                     Text {
-                        text: root.currentQuiz ? root.currentQuiz.questions[root.currentQuestionIndex].question : ""
+                        // Use properties quizData and questionIndex
+                        text: root.quizData ? root.quizData.questions[root.questionIndex].question : ""
                         font.pixelSize: 20
                         color: "white"
                         wrapMode: Text.Wrap
@@ -211,21 +200,34 @@ Item {
                         Layout.fillHeight: true // Make the answers layout fill vertical space
                         spacing: 24 // Increased spacing to spread items out more
                         Repeater {
-                            model: root.currentQuiz ? root.currentQuiz.questions[root.currentQuestionIndex].options : []
+                            // Use properties quizData and questionIndex
+                            model: root.quizData ? root.quizData.questions[root.questionIndex].options : []
 
                             delegate: Rectangle {
                                 Layout.fillWidth: true
-                                // Adjust preferred height based on the Text element's implicit height
-                                Layout.preferredHeight: Math.min(answerText.implicitHeight + 20, 100) // +20 for top/bottom margins
-                                Layout.maximumHeight: 100 // Keep the maximum height constraint
+                                Layout.preferredHeight: Math.min(answerText.implicitHeight + 20, 100)
+                                Layout.maximumHeight: 100
                                 radius: 4
 
+                                // Updated isSelected logic using properties and main.qml's response structure
                                 property bool isSelected: {
-                                    if (!root.currentQuiz)
-                                        return false
-                                    if (!root.quizResponses[root.currentQuiz.id])
-                                        return false
-                                    return root.quizResponses[root.currentQuiz.id][root.currentQuestionIndex] === modelData
+                                    // Check if quizData and responses exist
+                                    if (!root.quizData || !root.responses) return false;
+
+                                    // Find the response object for the current quiz
+                                    var quizResponseObj = root.responses.find(r => r.id === root.quizData.id);
+                                    if (!quizResponseObj || !quizResponseObj.questions) return false;
+
+                                    // Get the response for the current question index
+                                    var questionResponse = quizResponseObj.questions[root.questionIndex];
+                                    if (!questionResponse) return false;
+
+                                    // The response is stored as { questionText: answerText }
+                                    // We need the answerText part. Get the first value from the object.
+                                    var selectedAnswer = Object.values(questionResponse)[0];
+
+                                    // Compare with the current option (modelData)
+                                    return selectedAnswer === modelData;
                                 }
 
                                 color: isSelected ? "#ec4899" : "#4b5563" // pink-600 or gray-600
@@ -239,6 +241,7 @@ Item {
                                         top: parent.top
                                         margins: 10 // Apply padding directly
                                     }
+                                    // modelData here is an option string from the transformed 'options' array
                                     text: modelData
                                     font.pixelSize: 14
                                     color: "white"
@@ -249,7 +252,12 @@ Item {
 
                                 MouseArea {
                                     anchors.fill: parent
-                                    onClicked: root.quizResponse(root.currentQuiz.questions[root.currentQuestionIndex].question, modelData)
+                                    // Pass the question text and the selected option text (use properties)
+                                    onClicked: {
+                                        if (root.quizData) { // Ensure quizData is loaded
+                                            root.quizResponse(root.quizData.questions[root.questionIndex].question, modelData)
+                                        }
+                                    }
                                 }
                             }
                         }

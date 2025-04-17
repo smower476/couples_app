@@ -77,6 +77,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         root.dateIdeaResponse("yes")
+                        root.currentIndex = (root.currentIndex + 1) % root.dateIdeas.length
                     }
                 }
             }
@@ -100,6 +101,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         root.dateIdeaResponse("maybe")
+                        root.currentIndex = (root.currentIndex + 1) % root.dateIdeas.length
                     }
                 }
             }
@@ -123,6 +125,7 @@ Item {
                     anchors.fill: parent
                     onClicked: {
                         root.dateIdeaResponse("no")
+                        root.currentIndex = (root.currentIndex + 1) % root.dateIdeas.length
                     }
                 }
             }
