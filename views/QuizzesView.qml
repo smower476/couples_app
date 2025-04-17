@@ -95,141 +95,179 @@ Item {
         });
     }
 
-    ScrollView {
-        id: scrollView
+    // Main content area - modified to use Item instead of ScrollView for more control
+    Item {
+        id: mainContentArea
         anchors.fill: parent
-        contentWidth: parent.width
-        clip: true
-
-        // The entire ScrollView is only visible when NOT in completed state
         visible: !root.quizCompleted
 
-        ColumnLayout {
+        // Header
+        Rectangle {
+            id: quizHeader
             width: parent.width
-            spacing: 16
-
-            // Header
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                color: "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: root.quizData ? root.quizData.title : "🤔 Loading Quiz..."
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "white"
-                }
+            height: 60
+            color: "transparent"
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
             }
 
-            // Quiz question (visible when a quiz is loaded AND not completed)
+            Text {
+                anchors.centerIn: parent
+                text: root.quizData ? root.quizData.title : "🤔 Loading Quiz..."
+                font.pixelSize: 24
+                font.bold: true
+                color: "white"
+            }
+        }
+
+        // Question progress
+        Rectangle {
+            id: questionProgress
+            width: parent.width
+            height: 30
+            color: "transparent"
+            anchors {
+                top: quizHeader.bottom
+                left: parent.left
+                right: parent.right
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: "Question " + (root.questionIndex + 1) + " of " +
+                      (root.quizData ? root.quizData.questions.length : 0)
+                font.pixelSize: 16
+                color: "#9ca3af"
+            }
+        }
+
+        // Question container with scrolling for long questions
+        ScrollView {
+            id: questionScrollView
+            anchors {
+                top: questionProgress.bottom
+                left: parent.left
+                right: parent.right
+                bottom: answerContainer.top
+                leftMargin: 16
+                rightMargin: 16
+                topMargin: 10
+                bottomMargin: 10
+            }
+            clip: true
+            contentWidth: width
+
             Rectangle {
-                Layout.fillWidth: true
-                Layout.margins: 16
-                Layout.fillHeight: true
+                width: questionScrollView.width
+                height: questionText.implicitHeight + 40 // Add some padding
                 color: "#1f1f1f"
                 radius: 8
-                visible: root.quizData !== null && !root.quizCompleted
 
-                ColumnLayout {
-                    id: questionColumn
+                Text {
+                    id: questionText
                     anchors {
-                        left: parent.left
-                        right: parent.right
-                        top: parent.top
-                        margins: 16
+                        fill: parent
+                        margins: 20
                     }
+                    text: root.quizData ? root.quizData.questions[root.questionIndex].question : ""
+                    font.pixelSize: 20
+                    color: "white"
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
 
-                    Text {
-                        text: "Question " + (root.questionIndex + 1) + " of "
-                              + (root.quizData ? root.quizData.questions.length : 0)
-                        font.pixelSize: 16
-                        color: "#9ca3af"
-                    }
+        // Answer container - positioned at the bottom for easy thumb reach
+        Rectangle {
+            id: answerContainer
+            width: parent.width
+            color: "transparent"
+            // Fixed at the bottom of the screen
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+                bottomMargin: 20
+            }
+            // Dynamic height based on content
+            height: Math.min(answerColumn.implicitHeight + 20, parent.height * 0.6)
 
-                    Item {
-                        Layout.fillHeight: true
-                    }
+            ColumnLayout {
+                id: answerColumn
+                anchors {
+                    fill: parent
+                    margins: 10
+                }
+                spacing: 12 // Reduced spacing for more compact layout
 
-                    Text {
-                        text: root.quizData ? root.quizData.questions[root.questionIndex].question : ""
-                        font.pixelSize: 20
-                        color: "white"
-                        wrapMode: Text.Wrap
+                Repeater {
+                    model: root.quizData ? root.quizData.questions[root.questionIndex].options : []
+
+                    delegate: Rectangle {
                         Layout.fillWidth: true
-                    }
+                        Layout.preferredHeight: Math.min(answerText.implicitHeight + 24, 80) // Slightly taller for easier tapping
+                        Layout.maximumHeight: 80
+                        radius: 8 // Increased radius for more rounded corners
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 24
-                        Repeater {
-                            model: root.quizData ? root.quizData.questions[root.questionIndex].options : []
+                        property bool isSelected: {
+                            if (!root.quizData || !root.responses) return false;
+                            var quizResponseObj = root.responses.find(r => r.id === root.quizData.id);
+                            if (!quizResponseObj || !quizResponseObj.questions) return false;
+                            var questionResponse = quizResponseObj.questions[root.questionIndex];
+                            if (!questionResponse) return false;
+                            var selectedAnswer = Object.values(questionResponse)[0];
+                            return selectedAnswer === modelData;
+                        }
 
-                            delegate: Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: Math.min(answerText.implicitHeight + 20, 100)
-                                Layout.maximumHeight: 100
-                                radius: 4
+                        // Use gradient for more engaging button appearance
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: isSelected ? "#ec4899" : "#4b5563" }
+                            GradientStop { position: 1.0; color: isSelected ? "#db2777" : "#374151" }
+                        }
 
-                                property bool isSelected: {
-                                    if (!root.quizData || !root.responses) return false;
-                                    var quizResponseObj = root.responses.find(r => r.id === root.quizData.id);
-                                    if (!quizResponseObj || !quizResponseObj.questions) return false;
-                                    var questionResponse = quizResponseObj.questions[root.questionIndex];
-                                    if (!questionResponse) return false;
-                                    var selectedAnswer = Object.values(questionResponse)[0];
-                                    return selectedAnswer === modelData;
-                                }
+                        Text {
+                            id: answerText
+                            anchors {
+                                fill: parent
+                                margins: 12 // Increased padding for answer text
+                            }
+                            text: modelData
+                            font.pixelSize: 16 // Slightly larger text
+                            font.bold: isSelected // Bold when selected
+                            color: "white"
+                            wrapMode: Text.Wrap
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
 
-                                color: isSelected ? "#ec4899" : "#4b5563"
-
-                                Text {
-                                    id: answerText
-                                    anchors {
-                                        left: parent.left
-                                        right: parent.right
-                                        top: parent.top
-                                        margins: 10
-                                    }
-                                    text: modelData
-                                    font.pixelSize: 14
-                                    color: "white"
-                                    wrapMode: Text.Wrap
-                                    width: parent.width - 20
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        if (root.quizData) {
-                                            root.quizResponse(root.quizData.questions[root.questionIndex].question, modelData)
-                                        }
-                                    }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (root.quizData) {
+                                    root.quizResponse(root.quizData.questions[root.questionIndex].question, modelData)
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // Bottom padding
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 20
+                // Spacer to push items up from bottom navigation
+                Item {
+                    Layout.preferredHeight: 5
+                }
             }
         }
     }
 
-    // Quiz Completion View - This is NOT a popup anymore, but a full view
+    // Quiz Completion View
     Rectangle {
         id: quizCompletedView
         anchors.fill: parent
-        color: "#121212" // Dark background matching app theme
-        
-        // Visible when quiz is completed, hidden otherwise
+        color: "#121212"
         visible: root.quizCompleted
 
         // Border to match the app styling
