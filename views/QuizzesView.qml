@@ -211,7 +211,9 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: Math.min(answerText.implicitHeight + 24, 80) // Slightly taller for easier tapping
                         Layout.maximumHeight: 80
-                        radius: 8 // Increased radius for more rounded corners
+                        radius: 12 // Increased radius to match DateIdeasView
+                        color: "#1f1f1f" // gray-800
+                        anchors.horizontalCenter: parent.horizontalCenter // Center in the list
 
                         property bool isSelected: {
                             if (!root.quizData || !root.responses) return false;
@@ -223,10 +225,23 @@ Item {
                             return selectedAnswer === modelData;
                         }
 
-                        // Use gradient for more engaging button appearance
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: isSelected ? "#ec4899" : "#4b5563" }
-                            GradientStop { position: 1.0; color: isSelected ? "#db2777" : "#374151" }
+                        // Colored border based on selection status
+                        Rectangle {
+                            id: answerBorder
+                            anchors.fill: parent
+                            z: -1
+                            radius: 14 // Slightly larger than parent for border effect
+                            gradient: Gradient {
+                                GradientStop { 
+                                    position: 0.0
+                                    color: isSelected ? "#ec4899" : "#4b5563" // pink-600 : gray-600
+                                }
+                                GradientStop { 
+                                    position: 1.0
+                                    color: isSelected ? "#db2777" : "#374151" // pink-700 : gray-700
+                                }
+                            }
+                            anchors.margins: -2 // Creates border effect
                         }
 
                         Text {

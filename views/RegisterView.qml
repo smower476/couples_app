@@ -27,131 +27,356 @@ Item {
     }
 
     function isValidDateOfBirth(dobString) {
-        // Basic check for MM-DD-YYYY format and if date is in the past
         const dobRegex = /^\d{2}-\d{2}-\d{4}$/;
         if (!dobRegex.test(dobString)) {
-            return false; // Invalid format
+            return false;
         }
         try {
-            // Need to rearrange MM-DD-YYYY to YYYY-MM-DD for reliable Date parsing
             const parts = dobString.split('-');
             const year = parseInt(parts[2], 10);
-            const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+            const month = parseInt(parts[0], 10) - 1;
             const day = parseInt(parts[1], 10);
             const dob = new Date(year, month, day);
 
-            // Check if the parsed date matches the input parts (handles invalid dates like 02-30-2024)
             if (dob.getFullYear() !== year || dob.getMonth() !== month || dob.getDate() !== day) {
-                 return false; // Invalid date components
+                return false;
             }
 
             const today = new Date();
-            // Clear time part for accurate date comparison
             today.setHours(0, 0, 0, 0);
-            // Check if dob is a valid date and is before today
             return !isNaN(dob.getTime()) && dob < today;
         } catch (e) {
-            return false; // Error parsing date
+            return false;
         }
     }
-    // --- End Validation Functions ---
 
-    ScrollView { // Added ScrollView for potentially longer content
+    // Define styles directly in the component - matching LoginRegisterView
+    readonly property color backgroundColor: "#121212"
+    readonly property color cardBackgroundColor: "#1e1e1e"
+    readonly property color primaryColor: "#ec4899"
+    readonly property color textColor: "#ffffff"
+    readonly property color secondaryTextColor: "#a0a0a0"
+    readonly property int fontSizeSmall: 12
+    readonly property int fontSizeNormal: 14
+    readonly property int fontSizeMedium: 16
+    readonly property int fontSizeXLarge: 24
+    readonly property int marginSmall: 8
+    readonly property int marginNormal: 12
+    readonly property int marginMedium: 16
+    readonly property int marginLarge: 20
+    readonly property int marginXLarge: 24
+
+    // Background with gradient
+    Rectangle {
         anchors.fill: parent
-        contentWidth: parent.width
+        color: backgroundColor
+        
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: backgroundColor }
+            GradientStop { position: 1.0; color: Qt.darker(backgroundColor, 1.2) }
+        }
+    }
+
+    Image {
+        id: appLogo
+        source: "../images/heart.svg"
+        width: 70
+        height: 70
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: parent.height * 0.05
+        fillMode: Image.PreserveAspectFit
+    }
+
+    Rectangle {
+        id: cardContainer
+        width: parent.width * 0.85
+        anchors.top: appLogo.bottom
+        anchors.topMargin: marginLarge
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: parent.height * 0.05
+        anchors.horizontalCenter: parent.horizontalCenter
+        color: cardBackgroundColor
+        radius: 16
+    }
+
+    ScrollView {
+        id: scrollView
+        anchors.fill: cardContainer
+        anchors.margins: marginLarge
         clip: true
+        ScrollBar.vertical.policy: ScrollBar.Never
+        ScrollBar.horizontal.policy: ScrollBar.Never
+        ScrollBar.vertical.visible: false
+        ScrollBar.horizontal.visible: false
+
+        // Disable the flicking behavior that might show scrollbars
+        contentWidth: availableWidth
+        contentHeight: formLayout.implicitHeight
 
         ColumnLayout {
-            width: parent.width * 0.9 // Slightly wider for more fields
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: 30
-            spacing: 15
+            id: formLayout
+            width: scrollView.width
+            height: scrollView.height
+            spacing: marginLarge
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Create Account"
-                font.pixelSize: 24
+                font.pixelSize: fontSizeXLarge
                 font.bold: true
-                color: "white"
+                color: textColor
             }
 
-            // --- Decorative Fields ---
-            // Removed Nickname Field
-            TextField {
-                Layout.fillWidth: true
-                placeholderText: "Email (Optional)"
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-             TextField {
-                Layout.fillWidth: true
-                placeholderText: "Name (Optional)"
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-             TextField {
-                id: dobInput // Give DOB field an ID
-                Layout.fillWidth: true
-                placeholderText: "Date of Birth (MM-DD-YYYY)" // Hint format
-                inputMask: "00-00-0000" // Automatically format input
-                maximumLength: 10 // Limit length
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-            // --- End Decorative Fields ---
-
-            TextField {
-                id: usernameInput
-                Layout.fillWidth: true
-                placeholderText: "Username*"
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-
-            TextField {
-                id: passwordInput
-                Layout.fillWidth: true
-                placeholderText: "Password*"
-                echoMode: TextInput.Password
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-
-            TextField {
-                id: confirmPasswordInput
-                Layout.fillWidth: true
-                placeholderText: "Confirm Password*"
-                echoMode: TextInput.Password
-                color: "white"
-                background: Rectangle { color: "#374151"; radius: 4; border.color: "#4b5563" }
-                placeholderTextColor: "#9ca3af"
-            }
-
-            // Status Message Area
             Text {
-                id: statusText
+                Layout.alignment: Qt.AlignHCenter
+                text: "Join and connect with your partner"
+                font.pixelSize: fontSizeNormal
+                color: secondaryTextColor
+                Layout.bottomMargin: marginNormal
+            }
+
+            ColumnLayout {
                 Layout.fillWidth: true
-                text: registerRoot.statusMessage
-                color: statusMessage.startsWith("Error") ? "red" : "lightgreen"
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
+                spacing: marginSmall
+                
+                Text {
+                    text: "Email (Optional)"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: emailInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "Enter your email"
+                        placeholderTextColor: "#6b7280"
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: marginSmall
+                
+                Text {
+                    text: "Name (Optional)"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: nameInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "Enter your name"
+                        placeholderTextColor: "#6b7280"
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: marginSmall
+                
+                Text {
+                    text: "Date of Birth"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: dobInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "MM-DD-YYYY"
+                        placeholderTextColor: "#6b7280"
+                        inputMask: "00-00-0000"
+                        maximumLength: 10
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: marginSmall
+                
+                Text {
+                    text: "Username*"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: usernameInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "Create a username"
+                        placeholderTextColor: "#6b7280"
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: marginSmall
+                
+                Text {
+                    text: "Password*"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: passwordInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "Create a password"
+                        placeholderTextColor: "#6b7280"
+                        echoMode: TextInput.Password
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: marginSmall
+                
+                Text {
+                    text: "Confirm Password*"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 48
+                    color: "#2d2d2d"
+                    radius: 8
+                    
+                    TextField {
+                        id: confirmPasswordInput
+                        anchors.fill: parent
+                        leftPadding: 16
+                        rightPadding: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        placeholderText: "Confirm your password"
+                        placeholderTextColor: "#6b7280"
+                        echoMode: TextInput.Password
+                        color: textColor
+                        font.pixelSize: fontSizeNormal
+                        background: Item {}
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                height: statusText.contentHeight + marginMedium
+                color: statusMessage.startsWith("Error") ? "#450a0a" : "#042f2e"
+                radius: 6
                 visible: statusMessage !== ""
+                Layout.topMargin: marginNormal
+                
+                Text {
+                    id: statusText
+                    anchors.fill: parent
+                    anchors.margins: marginNormal
+                    text: registerRoot.statusMessage
+                    color: statusMessage.startsWith("Error") ? "#fecaca" : "#ccfbf1"
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: fontSizeNormal
+                }
             }
 
             Button {
                 id: registerButton
                 Layout.fillWidth: true
-                text: "Register"
+                Layout.preferredHeight: 48
+                Layout.topMargin: marginLarge
+                
+                background: Rectangle {
+                    color: registerButton.pressed ? Qt.darker(primaryColor, 1.2) : primaryColor
+                    radius: 8
+                    
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: registerButton.pressed ? Qt.darker(primaryColor, 1.2) : primaryColor }
+                        GradientStop { position: 1.0; color: registerButton.pressed ? Qt.darker("#db2777", 1.2) : "#db2777" }
+                    }
+                    
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+                
+                contentItem: Text {
+                    text: "Create Account"
+                    color: "#ffffff"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: fontSizeMedium
+                    font.bold: true
+                }
+                
                 onClicked: {
-                    registerRoot.statusMessage = ""; // Clear previous message
+                    registerRoot.statusMessage = "";
 
-                    // Validation
                     if (!isValidLogin(usernameInput.text)) {
                         registerRoot.statusMessage = "Error: Invalid username format (3-20 chars, a-z, A-Z, 0-9, _)";
                         return;
@@ -164,12 +389,10 @@ Item {
                         registerRoot.statusMessage = "Error: Passwords do not match";
                         return;
                     }
-                    // --- Add DOB Validation ---
-                    if (dobInput.text !== "" && dobInput.text !== "__-__-____" && !isValidDateOfBirth(dobInput.text)) { // Check mask isn't empty
+                    if (dobInput.text !== "" && dobInput.text !== "__-__-____" && !isValidDateOfBirth(dobInput.text)) {
                         registerRoot.statusMessage = "Error: Invalid Date of Birth (must be MM-DD-YYYY and in the past)";
                         return;
                     }
-                    // --- End DOB Validation ---
 
                     registerRoot.statusMessage = "Registering...";
                     CallAPI.registerUser(usernameInput.text, passwordInput.text, (regSuccess, regMessage) => {
@@ -178,7 +401,6 @@ Item {
                             CallAPI.loginUser(usernameInput.text, passwordInput.text, (loginSuccess, tokenOrError) => {
                                 if (loginSuccess) {
                                     registerRoot.statusMessage = "Registration & Login Successful!";
-                                    // Pass back username along with token
                                     registerRoot.registrationComplete(true, JSON.stringify({token: tokenOrError, username: usernameInput.text}));
                                 } else {
                                     registerRoot.statusMessage = "Error: Auto-login failed: " + tokenOrError;
@@ -193,17 +415,36 @@ Item {
                 }
             }
 
-            Button {
-                Layout.fillWidth: true
-                text: "Back to Login"
-                flat: true // Make it look less prominent
-                onClicked: {
-                    registerRoot.backToLoginRequested();
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: marginMedium
+                
+                Text {
+                    text: "Already have an account?"
+                    color: secondaryTextColor
+                    font.pixelSize: fontSizeNormal
+                }
+                
+                Text {
+                    text: "Sign In"
+                    color: primaryColor
+                    font.pixelSize: fontSizeNormal
+                    font.bold: true
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            registerRoot.backToLoginRequested();
+                        }
+                    }
                 }
             }
-
-             // Bottom padding
-            Item { Layout.preferredHeight: 30 }
+            
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: marginXLarge
+            }
         }
     }
 }
