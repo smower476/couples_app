@@ -24,6 +24,11 @@ ApplicationWindow {
     // Signal emitted after successful login and token is set
     signal loginSuccessful()
 
+    // --- New properties for quiz completion state ---
+    property bool quizCompletedState: false
+    property var lastCompletedQuizData: null
+    // --- End new properties ---
+
     property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
     // App state
@@ -34,9 +39,8 @@ ApplicationWindow {
     property var dailyResponses: []
     property var dateIdeasHistory: []
     property var currentQuiz: null // Holds the currently active quiz object fetched from QuizzesView
-    // property int currentQuizIndex: 0 // No longer needed, only one quiz active at a time
     property int currentQuestionIndex: 0 // Index of the question being displayed within currentQuiz
-    property var currentQuizResultData: null // Holds the specific quiz response object to show in results view
+
     // Stack view for different screens
     StackLayout {
         id: stackLayout
@@ -64,8 +68,6 @@ ApplicationWindow {
                 return 6
             case "register": // Add register view index
                 return 7
-            case "quiz-results": // Add quiz results view index
-                return 8
             default:
                 return 0 // Default to hub
             }
@@ -87,6 +89,10 @@ ApplicationWindow {
             questionIndex: window.currentQuestionIndex // Pass window.currentQuestionIndex to QuizzesView.questionIndex
             responses: window.quizResponses // Pass window.quizResponses to QuizzesView.responses
             jwtToken: window.jwtToken // Pass the JWT token
+            // --- Pass new completion state properties ---
+            quizCompleted: window.quizCompletedState
+            completedQuizData: window.lastCompletedQuizData
+            // --- End new properties ---
 
             // Handle the signal emitted by QuizzesView when data is fetched
             onQuizFetched: function(fetchedQuizData) {
@@ -94,6 +100,8 @@ ApplicationWindow {
                 if (fetchedQuizData) {
                     window.currentQuiz = fetchedQuizData;
                     window.currentQuestionIndex = 0; // Reset index for new quiz
+                    window.quizCompletedState = false; // Ensure completion state is reset for new quiz
+                    window.lastCompletedQuizData = null;
                     // Ensure responses array has an entry for this quiz, create if not
                     var existingResponseIndex = window.quizResponses.findIndex(r => r.id === fetchedQuizData.id);
                     if (existingResponseIndex === -1) {
@@ -109,6 +117,8 @@ ApplicationWindow {
                 } else {
                     console.error("main.qml: Quiz fetch failed.");
                     window.currentQuiz = null; // Clear quiz if fetch failed
+                    window.quizCompletedState = false; // Reset completion state
+                    window.lastCompletedQuizData = null;
                 }
             }
 
@@ -157,16 +167,30 @@ ApplicationWindow {
                     console.log("main.qml: Moving to next question index:", window.currentQuestionIndex);
                 } else {
                     console.log("main.qml: Quiz finished!");
-                    // Quiz finished, prepare data for results view and navigate
+                    // Quiz finished, prepare data and set completion state
                     var finishedQuizId = window.currentQuiz.id;
                     var finalResponses = window.quizResponses.find(r => r.id === finishedQuizId);
-                    window.currentQuizResultData = finalResponses ? finalResponses : { id: finishedQuizId, title: "Quiz Results", questions: [] }; // Pass the responses
+
+                    // --- Update completion state instead of navigating ---
+                    window.lastCompletedQuizData = finalResponses ? finalResponses : { id: finishedQuizId, title: "Quiz Results", questions: [] };
+                    window.quizCompletedState = true; // Set completion state
+                    // --- End update completion state ---
+
                     window.currentQuiz = null; // Clear the active quiz
                     window.currentQuestionIndex = 0; // Reset index
-                    window.currentView = "quiz-results"; // Navigate to results view
-                    console.log("main.qml: Navigating to quiz-results view with data:", JSON.stringify(window.currentQuizResultData));
+                    console.log("main.qml: Quiz completed. State set with data:", JSON.stringify(window.lastCompletedQuizData));
                 }
             }
+
+            // --- Handle signal from QuizzesView popup ---
+            onCompletionAcknowledged: () => {
+                console.log("main.qml: Quiz completion acknowledged.");
+                window.quizCompletedState = false; // Reset completion state
+                window.lastCompletedQuizData = null;
+                // Optionally navigate away, e.g., back to hub
+                window.currentView = "hub";
+            }
+            // --- End handle signal ---
         }
 
         // Daily question view
@@ -289,21 +313,6 @@ ApplicationWindow {
             }
         }
         // --- End Register View ---
-
-        // --- Add Quiz Results View ---
-        QuizResultsView {
-            id: quizResultsView
-            // Pass the specific quiz result data from main.qml
-            completedQuizResponses: window.currentQuizResultData
-
-            // Handle signal from QuizResultsView when user wants to dismiss it
-            onResultsDismissed: () => {
-                console.log("main.qml: Quiz results dismissed, returning to hub.");
-                window.currentQuizResultData = null; // Clear the result data
-                window.currentView = "hub"; // Go back to hub view
-            }
-        }
-        // --- End Quiz Results View ---
     }
 
     // Bottom navigation

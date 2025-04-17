@@ -152,7 +152,7 @@ function shuffleArray(array) {
 
 // --- Login/Register Functions ---
 
-const API_BASE_URL = "http://localhost:8080"; // Define base URL
+const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
 
 function registerUser(username, password, callback) {
     var xhr = new XMLHttpRequest();
