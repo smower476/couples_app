@@ -22,15 +22,6 @@ A mobile-first relationship application built with Qt/QML that helps couples str
 2. Select the macOS kit in the Configure Project screen
 3. Build and run the application
 
-Alternatively, use qmake from the command line:
-
-```bash
-mkdir build-mac
-cd build-mac
-qmake ../CouplesApp.pro
-make
-```
-
 ## Building for iOS
 
 1. Open the project in Qt Creator
