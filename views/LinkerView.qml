@@ -13,6 +13,7 @@ Item {
     property string inviteCode: ""
     property string jwtToken: "" // Add property to hold the JWT token
     property string userLinkCode: "Loading..." // Property to hold the fetched link code
+    property string errorMessage: "" // Property to hold error messages
 
     // Signals
     signal linkPartner()
@@ -102,14 +103,29 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 4
                         placeholderText: "Enter partner's invite code"
+                        placeholderTextColor: "#9ca3af"
                         horizontalAlignment: TextInput.AlignHCenter
-                        color: "white"
+                        color: "#9ca3af" // Changed from white to gray color
                         background: null
                         
                         onTextChanged: {
                             root.inviteCode = text
+                            root.errorMessage = "" // Clear error message when text changes
                         }
                     }
+                }
+                
+                // Error message display
+                Text {
+                    id: errorText
+                    text: root.errorMessage
+                    color: "#ef4444" // Red color for error
+                    font.pixelSize: 14
+                    visible: root.errorMessage !== ""
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 300
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
                 }
                 
                 // Link button
@@ -141,15 +157,18 @@ Item {
                                         root.linkPartner(); // Emit signal on successful API call
                                     } else {
                                         console.error("Failed to link partners:", result);
-                                        // TODO: Show error message to user in the UI
+                                        // Show error message to user in the UI
+                                        root.errorMessage = "Failed to link: " + result;
                                     }
                                 });
                             } else if (root.jwtToken === "") {
                                 console.error("Cannot link: User not logged in (no JWT token).");
-                                // TODO: Show message: "Please log in first."
+                                // Show message: "Please log in first."
+                                root.errorMessage = "Please log in first to link with your partner.";
                             } else {
                                 console.log("Cannot link: Invite code field is empty.");
-                                // TODO: Show message: "Please enter partner's code."
+                                // Show message: "Please enter partner's code."
+                                root.errorMessage = "Please enter your partner's invite code.";
                             }
                         }
                     }

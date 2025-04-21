@@ -29,15 +29,15 @@ ApplicationWindow {
     property var lastCompletedQuizData: null
     // --- End new properties ---
 
-    property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
+    // property var dateIdeas: ["🍽️ Romantic Dinner", "🎬 Movie Night", "🚶 Scenic Walk", "🎳 Bowling", "🍦 Ice Cream Date", "🎨 Art Gallery Visit", "🏞️ Picnic in the Park", "🍷 Wine Tasting", "🎮 Game Night", "🧘 Couples Yoga"]
 
     // App state
-    property string dailyQuestion: "What moment today made you smile?"
-    property int dateIdeasIndex: 0
+    // property string dailyQuestion: "What moment today made you smile?"
+    // property int dateIdeasIndex: 0
     property bool partnerLinked: false
     property var quizResponses: [] // Holds responses like [{id: "quiz1", title: "Quiz 1", questions: [{ "Q1": "A1"}, {"Q2": "A2"}]}]
-    property var dailyResponses: []
-    property var dateIdeasHistory: []
+    // property var dailyResponses: []
+    // property var dateIdeasHistory: []
     property var currentQuiz: null // Holds the currently active quiz object fetched from QuizzesView
     property int currentQuestionIndex: 0 // Index of the question being displayed within currentQuiz
 
@@ -56,18 +56,18 @@ ApplicationWindow {
                 return 0
             case "quizzes":
                 return 1
-            case "daily-question":
-                return 2
-            case "date-ideas":
-                return 3
+            // case "daily-question":
+            //     return 2
+            // case "date-ideas":
+            //     return 3
             case "linker":
-                return 4
+                return 2
             case "login": // Add login view index
-                return 5
+                return 3
             case "profile": // Add profile view index
-                return 6
+                return 4
             case "register": // Add register view index
-                return 7
+                return 5
             default:
                 return 0 // Default to hub
             }
@@ -77,8 +77,8 @@ ApplicationWindow {
         HubView {
             id: hubView
             quizResponses: window.quizResponses
-            dailyResponses: window.dailyResponses
-            dateIdeasHistory: window.dateIdeasHistory
+            // dailyResponses: window.dailyResponses
+            // dateIdeasHistory: window.dateIdeasHistory
         }
 
         // Quizzes view
@@ -193,43 +193,43 @@ ApplicationWindow {
             // --- End handle signal ---
         }
 
-        // Daily question view
-        DailyQuestionView {
-            id: dailyQuestionView
-            dailyQuestion: window.dailyQuestion
+        // // Daily question view
+        // DailyQuestionView {
+        //     id: dailyQuestionView
+        //     dailyQuestion: window.dailyQuestion
 
-            onSubmitResponse: function (response, question) {
-                var updatedResponses = window.dailyResponses.slice()
-                updatedResponses.push({
-                                          "question": question,
-                                          "response": response,
-                                          "date": new Date().toLocaleDateString(
-                                                      )
-                                      })
-                window.dailyResponses = updatedResponses
-            }
-        }
+        //     onSubmitResponse: function (response, question) {
+        //         var updatedResponses = window.dailyResponses.slice()
+        //         updatedResponses.push({
+        //                                   "question": question,
+        //                                   "response": response,
+        //                                   "date": new Date().toLocaleDateString(
+        //                                               )
+        //                               })
+        //         window.dailyResponses = updatedResponses
+        //     }
+        // }
 
         // Date ideas view
-        DateIdeasView {
-            id: dateIdeasView
-            dateIdeas: window.dateIdeas
-            currentIndex: window.dateIdeasIndex
+        // DateIdeasView {
+        //     id: dateIdeasView
+        //     dateIdeas: window.dateIdeas
+        //     currentIndex: window.dateIdeasIndex
 
-            onDateIdeaResponse: function (response) {
-                var updatedHistory = window.dateIdeasHistory.slice()
-                updatedHistory.push({
-                                        "idea": window.dateIdeas[window.dateIdeasIndex],
-                                        "response": response,
-                                        "date": new Date().toLocaleDateString()
-                                    })
-                window.dateIdeasHistory = updatedHistory
+        //     onDateIdeaResponse: function (response) {
+        //         var updatedHistory = window.dateIdeasHistory.slice()
+        //         updatedHistory.push({
+        //                                 "idea": window.dateIdeas[window.dateIdeasIndex],
+        //                                 "response": response,
+        //                                 "date": new Date().toLocaleDateString()
+        //                             })
+        //         window.dateIdeasHistory = updatedHistory
 
-                if (response === "no") {
-                    window.dateIdeasIndex = (window.dateIdeasIndex + 1) % window.dateIdeas.length
-                }
-            }
-        }
+        //         if (response === "no") {
+        //             window.dateIdeasIndex = (window.dateIdeasIndex + 1) % window.dateIdeas.length
+        //         }
+        //     }
+        // }
 
         // Linker view
         LinkerView {

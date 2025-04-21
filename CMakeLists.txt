@@ -39,8 +39,8 @@ qt_add_resources(${PROJECT_NAME} "qml_resources"
         components/BottomNavigation.qml
         views/HubView.qml
         views/QuizzesView.qml
-        views/DailyQuestionView.qml
-        views/DateIdeasView.qml
+        # views/DailyQuestionView.qml
+        # views/DateIdeasView.qml
         views/LinkerView.qml
         views/ProfileView.qml
         views/LoginRegisterView.qml
@@ -64,7 +64,7 @@ qt_add_resources(${PROJECT_NAME} "image_resources"
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.couplesapp
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.Anton.CouplesApp
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -85,7 +85,6 @@ if(IOS)
         # XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "" # Set your Development Team ID here if needed
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED NO
         XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${CMAKE_IOS_DEPLOYMENT_TARGET}
-        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.anton.CouplesApp"
     )
 endif()
 
