@@ -1,24 +1,4 @@
-// network.js
-function getDailyQuestion(callback, apiKey) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "https://api.api-ninjas.com/v1/trivia");
-    xhr.setRequestHeader("X-Api-Key", apiKey);  // Set your API key here
-
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                var response = JSON.parse(xhr.responseText);
-                callback(response[0].question);  // Call the callback function with the new question
-            } else {
-                console.log("Error:", xhr.status, xhr.responseText);
-                callback("Not able to load");
-            }
-        }
-    };
-
-    xhr.send();
-}
-
+const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
 
 function getDailyQuizId(token, callback) {
     var xhr = new XMLHttpRequest();
@@ -66,10 +46,6 @@ function getQuizContent(token, quizId, callback) {
     xhr.send(params);
 }
 
-
-
-
-
 function getQuizzQuestionAndAnswer(callback, apiKey) {
     var xhr = new XMLHttpRequest();
     var answers = [];
@@ -102,57 +78,6 @@ function getQuizzQuestionAndAnswer(callback, apiKey) {
     xhr.send();
 }
 
-// Function to fetch multiple random words in parallel
-function fetchRandomWords(count, apiKey, callback) {
-    var words = [];
-    var completedRequests = 0;
-
-    for (let i = 0; i < count; i++) {
-        let xhr = new XMLHttpRequest();
-        // Add a unique timestamp query parameter to prevent caching
-        xhr.open("GET", `https://api.api-ninjas.com/v1/randomword`);
-        xhr.setRequestHeader("X-Api-Key", apiKey);
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    try {
-                        let response = JSON.parse(xhr.responseText);
-                        if (response.word) {
-                            words.push(response.word[0]);
-                        } else {
-                            console.log("Unexpected response:", response);
-                        }
-                    } catch (e) {
-                        console.log("Error parsing JSON:", e);
-                    }
-                } else {
-                    console.log("Error:", xhr.status, xhr.responseText);
-                }
-                completedRequests++;
-
-                // When all requests finish, execute the callback
-                if (completedRequests === count) {
-                    callback(words);
-                }
-            }
-        };
-
-        xhr.send();
-    }
-}
-
-// Function to shuffle an array randomly
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]]; // Swap elements
-    }
-}
-
-// --- Login/Register Functions ---
-
-const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
 
 function registerUser(username, password, callback) {
     var xhr = new XMLHttpRequest();
@@ -247,32 +172,6 @@ function linkUsers(token, linkCode, callback) {
 
     xhr.send(params);
 }
-
-// --- Quiz Functions ---
-
-function addQuiz(token, quizData, callback) {
-    var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/add-quiz?token=" + encodeURIComponent(token);
-
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                console.log("Quiz added successfully:", xhr.responseText);
-                callback(true, xhr.responseText); // Success
-            } else {
-                console.error("Add quiz error:", xhr.status, xhr.responseText);
-                callback(false, "Failed to add quiz: " + xhr.responseText); // Failure
-            }
-        }
-    };
-
-    xhr.send(JSON.stringify(quizData));
-}
-
-// --- End Quiz Functions ---
 
 // --- End Login/Register Functions ---
 

@@ -3,8 +3,10 @@ build/
 debug/
 release/
 *.app/
-ios-build/
-mac-build/
+build_ios/
+ios/
+macos/
+
 
 # CMake build folder
 CMakeFiles/

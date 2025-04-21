@@ -11,19 +11,9 @@ Item {
     // Properties
     property string dailyQuestion: "What moment today made you smile?"
     property string currentResponse: ""
-    property string apiKey_: ""
     // Signals
     signal submitResponse(string response, string question)
-    signal getAPIKEY
 
-    API_Key {
-        onSendAPISIG: function(apiKey) {
-            root.apiKey_ = apiKey
-            CallAPI.getDailyQuestion(function(newQuestion) {
-                        dailyQuestion = newQuestion;
-                    }, apiKey);
-        }
-    }
     
     ColumnLayout {
         anchors {

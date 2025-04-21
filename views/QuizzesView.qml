@@ -213,7 +213,7 @@ Item {
                         Layout.maximumHeight: 80
                         radius: 12 // Increased radius to match DateIdeasView
                         color: "#1f1f1f" // gray-800
-                        anchors.horizontalCenter: parent.horizontalCenter // Center in the list
+                        Layout.alignment: Qt.AlignHCenter // Center in the list
 
                         property bool isSelected: {
                             if (!root.quizData || !root.responses) return false;

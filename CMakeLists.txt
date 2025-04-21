@@ -36,12 +36,9 @@ qt_add_resources(${PROJECT_NAME} "qml_resources"
     PREFIX "/"
     FILES
         main.qml
-        Style.qml
-        qmldir
         components/BottomNavigation.qml
         views/HubView.qml
         views/QuizzesView.qml
-        views/API_Key.qml
         views/DailyQuestionView.qml
         views/DateIdeasView.qml
         views/LinkerView.qml
@@ -49,7 +46,6 @@ qt_add_resources(${PROJECT_NAME} "qml_resources"
         views/LoginRegisterView.qml
         views/RegisterView.qml
         views/CallAPI.js
-        styles.qss
 )
 
 qt_add_resources(${PROJECT_NAME} "image_resources"
@@ -80,6 +76,16 @@ if(ANDROID)
         ANDROID_PACKAGE_NAME ${CMAKE_ANDROID_PACKAGE_NAME}
         ANDROID_ACTIVITY_NAME ${CMAKE_ANDROID_ACTIVITY_NAME}
         ANDROID_VERSION_CODE 1
+    )
+endif()
+
+if(IOS)
+    set(CMAKE_IOS_DEPLOYMENT_TARGET "17.5" CACHE STRING "Minimum iOS deployment version")
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        # XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "" # Set your Development Team ID here if needed
+        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED NO
+        XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${CMAKE_IOS_DEPLOYMENT_TARGET}
+        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.anton.CouplesApp"
     )
 endif()
 
