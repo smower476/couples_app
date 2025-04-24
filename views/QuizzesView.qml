@@ -13,6 +13,7 @@ Item {
     property var quizData: null
     property int questionIndex: 0
     property var responses: []
+    property var currentQuizAnswers: [] // To store selected answer indices (1-based)
 
     // Internal properties
     property string apiKey_: ""
@@ -60,6 +61,8 @@ Item {
                 };
                 console.log("Transformed Quiz:", JSON.stringify(transformedQuiz));
                 root.quizFetched(transformedQuiz);
+                // Initialize currentQuizAnswers array with placeholders
+                root.currentQuizAnswers = new Array(transformedQuiz.questions.length).fill(0);
             } else {
                 console.error("Failed to process quiz content or quiz_content is empty:", quizContent);
                 root.quizFetched(null);
@@ -74,6 +77,8 @@ Item {
                 if (quizId === "done") {
                     console.log("Quiz already completed today.");
                     root.quizCompleted = true;
+                    // Fetch completed quiz data if already done
+                    fetchCompletedQuizResults();
                     return;
                 }
                 CallAPI.getQuizContent(root.jwtToken, quizId, function(success, quizContent) {
@@ -86,6 +91,69 @@ Item {
                 });
             } else {
                 console.error("Failed to get daily quiz ID:", quizId);
+            }
+        });
+    }
+
+    function fetchCompletedQuizResults() {
+        if (!root.jwtToken) {
+            console.error("Cannot fetch completed quiz results: JWT token is missing.");
+            return;
+        }
+        CallAPI.getAnsweredQuizzes(root.jwtToken, function(success, answeredQuizzes) {
+            if (success && answeredQuizzes.length > 0) {
+                // Assuming the last answered quiz is the daily one
+                const lastAnsweredQuiz = answeredQuizzes[answeredQuizzes.length - 1];
+                const completedQuizId = lastAnsweredQuiz.quiz_id;
+                console.log(completedQuizId)
+
+                // Fetch the content of the completed quiz
+                CallAPI.getQuizContent(root.jwtToken, completedQuizId, function(success, quizContent) {
+                    if (success && quizContent && quizContent.quiz_content) {
+                        // Transform the fetched quiz content and user answers to match the structure expected by resultsRepeater
+
+                        // Decode the base 10 answer string back into an array of 1-based answer indices
+                        const encodedAnswer = parseInt(lastAnsweredQuiz.user_answer.quiz_answer, 10);
+                        let binaryAnswerString = encodedAnswer.toString(2);
+
+                        // Pad with leading zeros if necessary to ensure 2 bits per question
+                        const expectedBinaryLength = quizContent.quiz_content.length * 2;
+                        while (binaryAnswerString.length < expectedBinaryLength) {
+                            binaryAnswerString = "0" + binaryAnswerString;
+                        }
+
+                        const userAnswersIndices = [];
+                        for (let i = 0; i < binaryAnswerString.length; i += 2) {
+                            const twoBitChunk = binaryAnswerString.substring(i, i + 2);
+                            const answerIndexZeroBased = parseInt(twoBitChunk, 2);
+                            userAnswersIndices.push(answerIndexZeroBased + 1); // Convert to 1-based index
+                        }
+
+                        const transformedResults = {
+                            id: completedQuizId,
+                            title: quizContent.quiz_name || "Completed Quiz Results",
+                            questions: quizContent.quiz_content.map((question, index) => {
+                                const questionText = question.content_data;
+                                const userAnswerIndex = userAnswersIndices[index]; // Get the 1-based index for this question
+
+                                // Find the text of the answered option using the decoded index
+                                const answeredOptionText = question.answers && question.answers[userAnswerIndex - 1] !== undefined ?
+                                                           question.answers[userAnswerIndex - 1].answer_content :
+                                                           "Answer Index: " + userAnswerIndex; // Fallback
+
+                                return { [questionText]: answeredOptionText };
+                            })
+                        };
+                        root.completedQuizData = transformedResults;
+                        console.log("Fetched and transformed completed quiz data:", JSON.stringify(root.completedQuizData, null, 2));
+                    } else {
+                        console.error("Failed to fetch content for completed quiz:", quizContent);
+                        root.completedQuizData = null; // Clear previous results
+                    }
+                });
+            } else {
+                console.error("Failed to fetch completed quizzes or no answered quizzes found:", answeredQuizzes);
+                root.completedQuizData = null; // Clear previous results
             }
         });
     }
@@ -223,13 +291,9 @@ Item {
                         Layout.alignment: Qt.AlignHCenter // Center in the list
 
                         property bool isSelected: {
-                            if (!root.quizData || !root.responses) return false;
-                            var quizResponseObj = root.responses.find(r => r.id === root.quizData.id);
-                            if (!quizResponseObj || !quizResponseObj.questions) return false;
-                            var questionResponse = quizResponseObj.questions[root.questionIndex];
-                            if (!questionResponse) return false;
-                            var selectedAnswer = Object.values(questionResponse)[0];
-                            return selectedAnswer === modelData;
+                            if (!root.quizData || !root.currentQuizAnswers) return false;
+                            // Check if the stored answer index for this question matches this option's index + 1
+                            return root.currentQuizAnswers[root.questionIndex] === index + 1;
                         }
 
                         // Colored border based on selection status
@@ -239,11 +303,11 @@ Item {
                             z: -1
                             radius: 14 // Slightly larger than parent for border effect
                             gradient: Gradient {
-                                GradientStop { 
+                                GradientStop {
                                     position: 0.0
                                     color: isSelected ? "#ec4899" : "#4b5563" // pink-600 : gray-600
                                 }
-                                GradientStop { 
+                                GradientStop {
                                     position: 1.0
                                     color: isSelected ? "#db2777" : "#374151" // pink-700 : gray-700
                                 }
@@ -270,7 +334,30 @@ Item {
                             anchors.fill: parent
                             onClicked: {
                                 if (root.quizData) {
-                                    root.quizResponse(root.quizData.questions[root.questionIndex].question, modelData)
+                                    // Store the 1-based index of the selected answer
+                                    root.currentQuizAnswers[root.questionIndex] = index + 1;
+                                    console.log("Selected answer for question", root.questionIndex, ":", root.currentQuizAnswers[root.questionIndex]);
+
+                                    // Check if all questions have been answered
+                                    if (root.currentQuizAnswers.every(answer => answer !== 0)) {
+                                        console.log("All questions answered. Submitting quiz.");
+                                        CallAPI.answerQuiz(root.jwtToken, root.quizData.id, root.currentQuizAnswers, function(success, response) {
+                                            if (success) {
+                                                console.log("Quiz submitted successfully:", response);
+                                                // Fetch completed quiz results after successful submission
+                                                fetchCompletedQuizResults();
+                                                root.quizCompleted = true; // Show completion view
+                                            } else {
+                                                console.error("Failed to submit quiz:", response);
+                                                // Handle submission failure (e.g., show an error message)
+                                            }
+                                        });
+                                    } else {
+                                        // Move to the next question if not all answered
+                                        if (root.questionIndex < root.quizData.questions.length - 1) {
+                                            root.questionIndex++;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -365,7 +452,7 @@ Item {
                 Repeater {
                     id: resultsRepeater
                     model: root.completedQuizData ? root.completedQuizData.questions : []
-                    
+
                     delegate: Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: resultContentColumn.height + 20 // Add padding to height
@@ -394,7 +481,7 @@ Item {
                                 color: "#e5e7eb" // gray-200
                                 wrapMode: Text.Wrap
                             }
-                            
+
                             Text {
                                 width: parent.width
                                 text: "A: " + parent.parent.answerText
@@ -427,7 +514,7 @@ Item {
                     color: "#ec4899" // Pink text
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 // Bottom padding
                 Item { Layout.preferredHeight: 20 }
             }

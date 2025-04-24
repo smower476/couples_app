@@ -1,5 +1,13 @@
 const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
 
+function wrapNumberFieldsInQuotes(responseText) {
+    // This regex finds a quoted key, followed by optional whitespace, a colon,
+    // then captures one or more digits, and asserts that the digits are followed
+    // by a comma, closing brace, or closing bracket (to avoid matching numbers in strings).
+    const regex = /"(\w+)":\s*(\d+)(?=[,\}\]])/g;
+    return responseText.replace(regex, '"$1": "$2"');
+}
+
 function getDailyQuizId(token, callback) {
     // Check if the last completed quiz was less than a day ago in UTC time
     getAnsweredQuizzes(token, function(success, answeredQuizzes) {
@@ -34,9 +42,8 @@ function getDailyQuizId(token, callback) {
                     if (xhr.status === 200) {
                         console.log("Unanswered quizzes received:", xhr.responseText);
                         try {
-                            // Add quotes to keys before parsing
-                            // Add quotes to id values before parsing
-                            const responseText = xhr.responseText.replace(/"id":\s*([^",}\]]+)/g, '"id": "$1"');
+                            // Wrap number fields in quotes before parsing
+                            const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                             console.log("Raw quiz data:", responseText);
                             const quizzes = JSON.parse(responseText);
 
@@ -90,7 +97,9 @@ function getAnsweredQuizzes(token, callback) {
             if (xhr.status === 200) {
                 console.log("Answered quizzes received:", xhr.responseText);
                 try {
-                    const answeredQuizzes = JSON.parse(xhr.responseText);
+                    // Wrap number fields in quotes before parsing
+                    const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                    const answeredQuizzes = JSON.parse(responseText);
                     callback(true, answeredQuizzes);
                 } catch (e) {
                     console.error("Error processing answered quizzes:", e);
@@ -119,7 +128,9 @@ function getQuizContent(token, quizId, callback) {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 console.log("Quiz content received:", xhr.responseText);
-                const quizContent = JSON.parse(xhr.responseText);
+                // Wrap number fields in quotes before parsing
+                const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                const quizContent = JSON.parse(responseText);
                 console.log("Quiz content (pretty):", JSON.stringify(quizContent, null, 2));
                 callback(true, quizContent); // Success, return quiz content
             } else {
@@ -144,7 +155,9 @@ function getQuizzQuestionAndAnswer(callback, apiKey) {
     xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                var response = JSON.parse(xhr.responseText);
+                // Wrap number fields in quotes before parsing
+                const responseText = wrapNumberFieldsInQuotes(xhr.responseText); // No number fields to wrap in this case
+                var response = JSON.parse(responseText);
                 var question = response[0].question;
                 answers.push(response[0].answer); // Correctly store the answer
 
@@ -178,7 +191,9 @@ function registerUser(username, password, callback) {
             // Accept 200 OK or 201 Created as success for registration
             if (xhr.status === 200 || xhr.status === 201) {
                 console.log("Registration successful:", xhr.status, xhr.responseText);
-                callback(true, xhr.responseText); // Success
+                // Wrap number fields in quotes before parsing (assuming response might contain user ID or similar)
+                const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                callback(true, responseText); // Success
             } else {
                 console.error("Registration error:", xhr.status, xhr.responseText);
                 callback(false, "Registration failed: " + xhr.responseText); // Failure
@@ -201,7 +216,7 @@ function loginUser(username, password, callback) {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 console.log("Login successful. JWT:", xhr.responseText);
-                // Assuming the response text is the JWT token directly
+                // Assuming the response text is the JWT token directly, no parsing needed here
                 callback(true, xhr.responseText); // Success, return JWT
             } else {
                 console.error("Login error:", xhr.status, xhr.responseText);
@@ -224,7 +239,7 @@ xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
             console.log("Link code received:", xhr.responseText);
-            // Assuming the response text is the link code directly
+            // Assuming the response text is the link code directly, no parsing needed here
             callback(true, xhr.responseText); // Success, return link code
         } else {
             console.error("Get link code error:", xhr.status, xhr.responseText);
@@ -248,10 +263,66 @@ function linkUsers(token, linkCode, callback) {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 console.log("Users linked successfully:", xhr.responseText);
-                callback(true, xhr.responseText); // Success
+                // Wrap number fields in quotes before parsing (assuming response might contain linked user IDs or similar)
+                const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                callback(true, responseText); // Success
             } else {
                 console.error("Link users error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to link users: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.send(params);
+}
+
+function answerQuiz(token, quizId, answers, callback) {
+    let binaryString = "";
+    for (const answer of answers) {
+        // Convert answer (1-4) to 2-bit binary (00-11)
+        // 1 -> 00, 2 -> 01, 3 -> 10, 4 -> 11
+        switch (answer) {
+            case 1:
+                binaryString += "00";
+                break;
+            case 2:
+                binaryString += "01";
+                break;
+            case 3:
+                binaryString += "10";
+                break;
+            case 4:
+                binaryString += "11";
+                break;
+            default:
+                console.error("Invalid answer value:", answer);
+                callback(false, "Invalid answer value provided.");
+                return;
+        }
+    }
+
+    // Convert binary string to base 10 integer
+    const base10Answer = parseInt(binaryString, 2);
+    console.log("Binary answer string:", binaryString);
+    console.log("Base 10 answer:", base10Answer);
+
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/answer-quiz";
+    var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId) + "&answer=" + encodeURIComponent(base10Answer);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Quiz answered successfully:", xhr.responseText);
+                // Wrap number fields in quotes before parsing (assuming response might contain quiz result ID or similar)
+                const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                callback(true, responseText); // Success
+            } else {
+                console.error("Answer quiz error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to answer quiz: " + xhr.responseText); // Failure
             }
         }
     };
