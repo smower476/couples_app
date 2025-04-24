@@ -243,7 +243,6 @@ Item {
             onClicked: {
                 console.log("Login clicked:", usernameInput.text);
                 loginRegisterRoot.statusMessage = "";
-
                 if (!isValidLogin(usernameInput.text)) {
                     loginRegisterRoot.statusMessage = "Error: Invalid username format (3-20 chars, a-z, A-Z, 0-9, _)";
                     return;

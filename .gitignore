@@ -4,7 +4,6 @@ debug/
 release/
 *.app/
 build_ios/
-ios/
 macos/
 
 

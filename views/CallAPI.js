@@ -1,8 +1,85 @@
 const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
 
 function getDailyQuizId(token, callback) {
+    // Check if the last completed quiz was less than a day ago in UTC time
+    getAnsweredQuizzes(token, function(success, answeredQuizzes) {
+        if (success) {
+            if (answeredQuizzes.length > 0) {
+                // Get the timestamp of the last completed quiz
+                const lastCompletedQuiz = answeredQuizzes[answeredQuizzes.length - 1];
+                const lastCompletedTime = new Date(lastCompletedQuiz.user_answer.answered_at).getTime(); // Assuming answered_at is in ISO format
+                const now = Date.now();
+                const diff = now - lastCompletedTime;
+                const oneDay = 24 * 60 * 60 * 1000;
+
+                if (diff < oneDay) {
+                    console.log("Daily quiz already done for today.");
+                    callback(true, "done");
+                    return;
+                } else {
+                    console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
+                }
+            }
+
+            // If not done for today, proceed with getting an unanswered quiz
+            var xhr = new XMLHttpRequest();
+            var url = API_BASE_URL + "/get-unanswered-quizes";
+            var params = "token=" + encodeURIComponent(token);
+
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        console.log("Unanswered quizzes received:", xhr.responseText);
+                        try {
+                            // Add quotes to keys before parsing
+                            // Add quotes to id values before parsing
+                            const responseText = xhr.responseText.replace(/"id":\s*([^",}\]]+)/g, '"id": "$1"');
+                            console.log("Raw quiz data:", responseText);
+                            const quizzes = JSON.parse(responseText);
+
+                            // Sort quizzes by ID
+                            quizzes.sort((a, b) => {
+                                if (typeof a.id === 'string' && typeof b.id === 'string') {
+                                    return a.id.localeCompare(b.id);
+                                } else {
+                                    return a.id - b.id;
+                                }
+                            });
+                            console.log("Sorted quiz data:", JSON.stringify(quizzes, null, 2));
+
+                            // Sort quizzes by created_at in ascending order (oldest first)
+                            quizzes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+                            // Select the oldest quiz (the first one after sorting)
+                            const quizId = quizzes[0].id;
+
+                            console.log("Selected quiz ID:", quizId);
+                            callback(true, quizId); // Success, return quiz ID
+                        } catch (e) {
+                            console.error("Error processing quizzes:", e);
+                            callback(false, "Failed to process quizzes: " + e.message);
+                        }
+                    } else {
+                        console.error("Get unanswered quizzes error:", xhr.status, xhr.responseText);
+                        callback(false, "Failed to get unanswered quizzes: " + xhr.responseText); // Failure
+                    }
+                }
+            };
+
+            xhr.send(params);
+        } else {
+            console.error("Failed to get answered quizzes:", answeredQuizzes);
+            callback(false, "Failed to get answered quizzes.");
+        }
+    });
+}
+
+function getAnsweredQuizzes(token, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-daily-quiz";
+    var url = API_BASE_URL + "/get-answered-quizes";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true);
@@ -11,11 +88,17 @@ function getDailyQuizId(token, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Daily Quiz ID received:", xhr.responseText);
-                callback(true, xhr.responseText); // Success, return quiz ID
+                console.log("Answered quizzes received:", xhr.responseText);
+                try {
+                    const answeredQuizzes = JSON.parse(xhr.responseText);
+                    callback(true, answeredQuizzes);
+                } catch (e) {
+                    console.error("Error processing answered quizzes:", e);
+                    callback(false, "Failed to process answered quizzes: " + e.message);
+                }
             } else {
-                console.error("Get daily quiz ID error:", xhr.status, xhr.responseText);
-                callback(false, "Failed to get daily quiz ID: " + xhr.responseText); // Failure
+                console.error("Get answered quizzes error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to get answered quizzes: " + xhr.responseText);
             }
         }
     };
@@ -27,6 +110,7 @@ function getQuizContent(token, quizId, callback) {
     var xhr = new XMLHttpRequest();
     var url = API_BASE_URL + "/get-quiz-content";
     var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId);
+    console.log(params);
 
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -35,7 +119,9 @@ function getQuizContent(token, quizId, callback) {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 console.log("Quiz content received:", xhr.responseText);
-                callback(true, JSON.parse(xhr.responseText)); // Success, return quiz content
+                const quizContent = JSON.parse(xhr.responseText);
+                console.log("Quiz content (pretty):", JSON.stringify(quizContent, null, 2));
+                callback(true, quizContent); // Success, return quiz content
             } else {
                 console.error("Get quiz content error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to get quiz content: " + xhr.responseText); // Failure
@@ -174,6 +260,3 @@ function linkUsers(token, linkCode, callback) {
 }
 
 // --- End Login/Register Functions ---
-
-
-

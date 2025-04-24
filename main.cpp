@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     
     // Set application info
-    app.setApplicationName("CouplesApp");
-    app.setOrganizationName("CouplesApp");
+    app.setApplicationName("Couples App");
+    app.setOrganizationName("Couples App");
     
     // Set Material style for consistent look on all platforms
     QQuickStyle::setStyle("Material");

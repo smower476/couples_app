@@ -27,16 +27,6 @@ Item {
     signal quizResponse(string question, string response)
     signal completionAcknowledged()
 
-    // Component initialization logic
-    Component.onCompleted: {
-        // Only fetch new quiz if not already completed
-        if (root.jwtToken && !root.quizCompleted) {
-            fetchDailyQuiz();
-        } else {
-            console.log("QuizzesView: JWT token not available or quiz already completed.");
-        }
-    }
-
     // Connections to react to property changes on this component (root)
     Connections {
         target: root
@@ -54,10 +44,10 @@ Item {
     // Function to fetch and process the daily quiz
     function fetchDailyQuiz() {
         console.log("QuizzesView: Fetching daily quiz with token:", root.jwtToken);
-        getNewQuiz(function (quizContent) {
+        getNewQuiz(function (quizContent, quizId) {
             if (quizContent && quizContent.quiz_content && quizContent.quiz_content.length > 0) {
                 var transformedQuiz = {
-                    id: quizContent.quiz_content[0].content_id || "daily_quiz_" + new Date().getTime(),
+                    id: quizId || "daily_quiz_" + new Date().getTime(),
                     title: quizContent.quiz_name || "Daily Quiz",
                     questions: quizContent.quiz_content.map((item, index) => {
                         return {
@@ -81,10 +71,15 @@ Item {
         CallAPI.getDailyQuizId(root.jwtToken, function(success, quizId) {
             if (success) {
                 console.log("Daily Quiz ID:", quizId);
+                if (quizId === "done") {
+                    console.log("Quiz already completed today.");
+                    root.quizCompleted = true;
+                    return;
+                }
                 CallAPI.getQuizContent(root.jwtToken, quizId, function(success, quizContent) {
                     if (success) {
                         console.log("Quiz content:", quizContent);
-                        callback(quizContent);
+                        callback(quizContent, quizId);
                     } else {
                         console.error("Failed to get quiz content:", quizContent);
                     }
@@ -141,6 +136,18 @@ Item {
                 font.pixelSize: 16
                 color: "#9ca3af"
             }
+        }
+
+        // Temporary Quiz ID display
+        Text {
+            id: quizIdDisplay
+            anchors {
+                centerIn: parent
+            }
+            horizontalAlignment: Text.AlignHCenter
+            color: "yellow"
+            font.pixelSize: 14
+            text: root.quizData ? "Quiz ID: " + root.quizData.id : ""
         }
 
         // Question container with scrolling for long questions
