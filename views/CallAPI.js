@@ -9,23 +9,31 @@ function wrapNumberFieldsInQuotes(responseText) {
 }
 
 function getDailyQuizId(token, callback) {
-    // Check if the last completed quiz was less than a day ago in UTC time
     getAnsweredQuizzes(token, function(success, answeredQuizzes) {
         if (success) {
             if (answeredQuizzes.length > 0) {
                 // Get the timestamp of the last completed quiz
                 const lastCompletedQuiz = answeredQuizzes[answeredQuizzes.length - 1];
-                const lastCompletedTime = new Date(lastCompletedQuiz.user_answer.answered_at).getTime(); // Assuming answered_at is in ISO format
-                const now = Date.now();
-                const diff = now - lastCompletedTime;
-                const oneDay = 24 * 60 * 60 * 1000;
-
-                if (diff < oneDay) {
-                    console.log("Daily quiz already done for today.");
-                    callback(true, "done");
-                    return;
-                } else {
-                    console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
+                // Defensive: check for user_answer and answered_at, else fallback to created_at
+                let lastCompletedTime = null;
+                if (lastCompletedQuiz.user_answer && lastCompletedQuiz.user_answer.answered_at) {
+                    lastCompletedTime = new Date(lastCompletedQuiz.user_answer.answered_at).getTime();
+                } else if (lastCompletedQuiz.self_answered_at) {
+                    lastCompletedTime = new Date(lastCompletedQuiz.self_answered_at).getTime();
+                } else if (lastCompletedQuiz.created_at) {
+                    lastCompletedTime = new Date(lastCompletedQuiz.created_at).getTime();
+                }
+                if (lastCompletedTime) {
+                    const now = Date.now();
+                    const diff = now - lastCompletedTime;
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    if (diff < oneDay) {
+                        console.log("Daily quiz already done for today.");
+                        callback(true, "done");
+                        return;
+                    } else {
+                        console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
+                    }
                 }
             }
 
@@ -100,7 +108,14 @@ function getAnsweredQuizzes(token, callback) {
                     // Wrap number fields in quotes before parsing
                     const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                     const answeredQuizzes = JSON.parse(responseText);
-                    callback(true, answeredQuizzes);
+                    // Defensive: ensure always array
+                    if (Array.isArray(answeredQuizzes)) {
+                        callback(true, answeredQuizzes);
+                    } else if (answeredQuizzes) {
+                        callback(true, [answeredQuizzes]);
+                    } else {
+                        callback(true, []);
+                    }
                 } catch (e) {
                     console.error("Error processing answered quizzes:", e);
                     callback(false, "Failed to process answered quizzes: " + e.message);

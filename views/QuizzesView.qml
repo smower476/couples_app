@@ -33,18 +33,18 @@ Item {
         target: root
 
         function onJwtTokenChanged() {
-            console.log("QuizzesView: jwtToken changed. Fetching quiz if not completed.");
+            //console.log("QuizzesView: jwtToken changed. Fetching quiz if not completed.");
             if (root.jwtToken && !root.quizCompleted) {
                 fetchDailyQuiz();
             } else {
-                console.log("QuizzesView: jwtToken cleared or quiz already completed.");
+                ////console.log("QuizzesView: jwtToken cleared or quiz already completed.");
             }
         }
     }
 
     // Function to fetch and process the daily quiz
     function fetchDailyQuiz() {
-        console.log("QuizzesView: Fetching daily quiz with token:", root.jwtToken);
+        //console.log("QuizzesView: Fetching daily quiz with token:", root.jwtToken);
         getNewQuiz(function (quizContent, quizId) {
             if (quizContent && quizContent.quiz_content && quizContent.quiz_content.length > 0) {
                 var transformedQuiz = {
@@ -59,7 +59,7 @@ Item {
                         };
                     })
                 };
-                console.log("Transformed Quiz:", JSON.stringify(transformedQuiz));
+                //console.log("Transformed Quiz:", JSON.stringify(transformedQuiz));
                 root.quizFetched(transformedQuiz);
                 // Initialize currentQuizAnswers array with placeholders
                 root.currentQuizAnswers = new Array(transformedQuiz.questions.length).fill(0);
@@ -73,9 +73,9 @@ Item {
     function getNewQuiz(callback) {
         CallAPI.getDailyQuizId(root.jwtToken, function(success, quizId) {
             if (success) {
-                console.log("Daily Quiz ID:", quizId);
+                //console.log("Daily Quiz ID:", quizId);
                 if (quizId === "done") {
-                    console.log("Quiz already completed today.");
+                    //console.log("Quiz already completed today.");
                     root.quizCompleted = true;
                     // Fetch completed quiz data if already done
                     fetchCompletedQuizResults();
@@ -83,7 +83,7 @@ Item {
                 }
                 CallAPI.getQuizContent(root.jwtToken, quizId, function(success, quizContent) {
                     if (success) {
-                        console.log("Quiz content:", quizContent);
+                        //console.log("Quiz content:", quizContent);
                         callback(quizContent, quizId);
                     } else {
                         console.error("Failed to get quiz content:", quizContent);
@@ -102,58 +102,69 @@ Item {
         }
         CallAPI.getAnsweredQuizzes(root.jwtToken, function(success, answeredQuizzes) {
             if (success && answeredQuizzes.length > 0) {
-                // Assuming the last answered quiz is the daily one
+                // Use the last answered quiz
                 const lastAnsweredQuiz = answeredQuizzes[answeredQuizzes.length - 1];
-                const completedQuizId = lastAnsweredQuiz.quiz_id;
-                console.log(completedQuizId)
-
+                const completedQuizId = lastAnsweredQuiz.id || lastAnsweredQuiz.quiz_id;
+                const quizName = lastAnsweredQuiz.quiz_name || "Completed Quiz Results";
                 // Fetch the content of the completed quiz
                 CallAPI.getQuizContent(root.jwtToken, completedQuizId, function(success, quizContent) {
                     if (success && quizContent && quizContent.quiz_content) {
-                        // Transform the fetched quiz content and user answers to match the structure expected by resultsRepeater
-
-                        // Decode the base 10 answer string back into an array of 1-based answer indices
-                        const encodedAnswer = parseInt(lastAnsweredQuiz.user_answer.quiz_answer, 10);
-                        let binaryAnswerString = encodedAnswer.toString(2);
-
-                        // Pad with leading zeros if necessary to ensure 2 bits per question
-                        const expectedBinaryLength = quizContent.quiz_content.length * 2;
-                        while (binaryAnswerString.length < expectedBinaryLength) {
-                            binaryAnswerString = "0" + binaryAnswerString;
+                        // Helper to decode base10 answer to array of 1-based indices
+                        function decodeAnswers(encoded, questionCount) {
+                            let encoded_num = parseInt(encoded, 10);
+                            let bin = encoded_num.toString(2);
+                            // Pad with leading zeros to ensure 2 bits per question
+                            while (bin.length < questionCount * 2) {
+                                bin = "0" + bin;
+                            }
+                            let arr = [];
+                            for (let i = 0; i < questionCount; ++i) {
+                                let bits = bin.substr(i * 2, 2);
+                                arr.push(parseInt(bits, 2) + 1);
+                            }
+                            return arr;
                         }
 
-                        const userAnswersIndices = [];
-                        for (let i = 0; i < binaryAnswerString.length; i += 2) {
-                            const twoBitChunk = binaryAnswerString.substring(i, i + 2);
-                            const answerIndexZeroBased = parseInt(twoBitChunk, 2);
-                            userAnswersIndices.push(answerIndexZeroBased + 1); // Convert to 1-based index
-                        }
+                        const questionCount = quizContent.quiz_content.length;
+                        let selfAnswers = [];
+                        let partnerAnswers = [];
+                        console.log("DEBUG: self_answer (int):", typeof(lastAnsweredQuiz.self_answer));
+                        selfAnswers = decodeAnswers(lastAnsweredQuiz.self_answer, questionCount);
+                        console.log("DEBUG: self_answer (int):", typeof(selfAnswers));
+        
+                        console.log("DEBUG: partner_answer (int):", lastAnsweredQuiz.partner_answer);
+                        partnerAnswers = decodeAnswers(lastAnsweredQuiz.partner_answer, questionCount);
 
                         const transformedResults = {
                             id: completedQuizId,
-                            title: quizContent.quiz_name || "Completed Quiz Results",
+                            title: quizName,
                             questions: quizContent.quiz_content.map((question, index) => {
                                 const questionText = question.content_data;
-                                const userAnswerIndex = userAnswersIndices[index]; // Get the 1-based index for this question
-
-                                // Find the text of the answered option using the decoded index
-                                const answeredOptionText = question.answers && question.answers[userAnswerIndex - 1] !== undefined ?
-                                                           question.answers[userAnswerIndex - 1].answer_content :
-                                                           "Answer Index: " + userAnswerIndex; // Fallback
-
-                                return { [questionText]: answeredOptionText };
+                                const selfIdx = (selfAnswers.length > index) ? selfAnswers[index] - 1 : -1;
+                                const partnerIdx = (partnerAnswers.length > index) ? partnerAnswers[index] - 1 : -1;
+                                const selfText = (selfIdx >= 0 && question.answers[selfIdx])
+                                    ? question.answers[selfIdx].answer_content
+                                    : "No answer";
+                                const partnerText = (partnerIdx >= 0 && question.answers[partnerIdx])
+                                    ? question.answers[partnerIdx].answer_content
+                                    : "No answer";
+                                return {
+                                    question: questionText,
+                                    self: selfText,
+                                    partner: partnerText
+                                };
                             })
                         };
                         root.completedQuizData = transformedResults;
-                        console.log("Fetched and transformed completed quiz data:", JSON.stringify(root.completedQuizData, null, 2));
+                        //console.log("Fetched and transformed completed quiz data:", JSON.stringify(root.completedQuizData, null, 2));
                     } else {
                         console.error("Failed to fetch content for completed quiz:", quizContent);
-                        root.completedQuizData = null; // Clear previous results
+                        root.completedQuizData = null;
                     }
                 });
             } else {
                 console.error("Failed to fetch completed quizzes or no answered quizzes found:", answeredQuizzes);
-                root.completedQuizData = null; // Clear previous results
+                root.completedQuizData = null;
             }
         });
     }
@@ -336,14 +347,14 @@ Item {
                                 if (root.quizData) {
                                     // Store the 1-based index of the selected answer
                                     root.currentQuizAnswers[root.questionIndex] = index + 1;
-                                    console.log("Selected answer for question", root.questionIndex, ":", root.currentQuizAnswers[root.questionIndex]);
+                                    //console.log("Selected answer for question", root.questionIndex, ":", root.currentQuizAnswers[root.questionIndex]);
 
                                     // Check if all questions have been answered
                                     if (root.currentQuizAnswers.every(answer => answer !== 0)) {
-                                        console.log("All questions answered. Submitting quiz.");
+                                        //console.log("All questions answered. Submitting quiz.");
                                         CallAPI.answerQuiz(root.jwtToken, root.quizData.id, root.currentQuizAnswers, function(success, response) {
                                             if (success) {
-                                                console.log("Quiz submitted successfully:", response);
+                                                //console.log("Quiz submitted successfully:", response);
                                                 // Fetch completed quiz results after successful submission
                                                 fetchCompletedQuizResults();
                                                 root.quizCompleted = true; // Show completion view
@@ -447,22 +458,19 @@ Item {
                     color: "white"
                 }
 
-                // List of Questions and Answers
-                // Instead of ListView, use a Repeater for better layout control
+                // List of Questions and Answers (show both self and partner)
                 Repeater {
                     id: resultsRepeater
                     model: root.completedQuizData ? root.completedQuizData.questions : []
 
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: resultContentColumn.height + 20 // Add padding to height
-                        color: "#1f1f1f" // gray-800
+                        Layout.preferredHeight: resultContentColumn.height + 20
+                        color: "#1f1f1f"
                         radius: 5
                         Layout.bottomMargin: 10
 
-                        property var questionAnswerPair: modelData
-                        property string questionText: Object.keys(questionAnswerPair)[0] || "Question"
-                        property string answerText: Object.values(questionAnswerPair)[0] || "No answer provided"
+                        property var questionObj: modelData
 
                         Column {
                             id: resultContentColumn
@@ -476,20 +484,30 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "Q: " + parent.parent.questionText
+                                text: "Q: " + (questionObj.question || "")
                                 font.pixelSize: 14
-                                color: "#e5e7eb" // gray-200
+                                color: "#e5e7eb"
                                 wrapMode: Text.Wrap
                             }
 
                             Text {
                                 width: parent.width
-                                text: "A: " + parent.parent.answerText
+                                text: "You: " + (questionObj.self || "No answer")
                                 font.pixelSize: 14
                                 color: "white"
                                 font.bold: true
                                 wrapMode: Text.Wrap
                                 topPadding: 4
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: "Partner: " + (questionObj.partner || "No answer")
+                                font.pixelSize: 14
+                                color: "#ec4899"
+                                font.bold: true
+                                wrapMode: Text.Wrap
+                                topPadding: 2
                             }
                         }
                     }
