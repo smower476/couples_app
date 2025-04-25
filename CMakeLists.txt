@@ -26,8 +26,8 @@ set(QML_FILES
     views/RegisterView.qml
     views/CallAPI.js
     # Commented views that may be used later
-    # views/DailyQuestionView.qml
-    # views/DateIdeasView.qml
+    views/DailyQuestionView.qml
+    views/DateIdeasView.qml
 )
 
 # Define image resources

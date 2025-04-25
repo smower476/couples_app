@@ -84,71 +84,71 @@ Rectangle {
             }
         }
         
-        // // Daily Q tab
-        // Item {
-        //     Layout.fillHeight: true
-        //     Layout.fillWidth: true
+        // Daily Q tab
+        Item {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
             
-        //     ColumnLayout {
-        //         anchors.centerIn: parent
-        //         spacing: 4
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 4
                 
-        //         Image {
-        //             Layout.alignment: Qt.AlignHCenter
-        //             source: bottomNav.activeTab === "daily-question" ? "qrc:/images/message-circle-active.svg" : "qrc:/images/message-circle.svg"
-        //             sourceSize.width: 24
-        //             sourceSize.height: 24
-        //         }
+                Image {
+                    Layout.alignment: Qt.AlignHCenter
+                    source: bottomNav.activeTab === "daily-question" ? "qrc:/images/message-circle-active.svg" : "qrc:/images/message-circle.svg"
+                    sourceSize.width: 24
+                    sourceSize.height: 24
+                }
                 
-        //         Text {
-        //             Layout.alignment: Qt.AlignHCenter
-        //             text: "Daily Q"
-        //             font.pixelSize: 12
-        //             color: bottomNav.activeTab === "daily-question" ? "#ec4899" : "#9ca3af"
-        //         }
-        //     }
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "Daily Q"
+                    font.pixelSize: 12
+                    color: bottomNav.activeTab === "daily-question" ? "#ec4899" : "#9ca3af"
+                }
+            }
             
-        //     MouseArea {
-        //         anchors.fill: parent
-        //         onClicked: {
-        //             bottomNav.activeTab = "daily-question"
-        //             tabSelected("daily-question")
-        //         }
-        //     }
-        // }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    bottomNav.activeTab = "daily-question"
+                    tabSelected("daily-question")
+                }
+            }
+        }
         
-        // // Date Ideas tab
-        // Item {
-        //     Layout.fillHeight: true
-        //     Layout.fillWidth: true
+        // Date Ideas tab
+        Item {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
             
-        //     ColumnLayout {
-        //         anchors.centerIn: parent
-        //         spacing: 4
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 4
                 
-        //         Image {
-        //             Layout.alignment: Qt.AlignHCenter
-        //             source: bottomNav.activeTab === "date-ideas" ? "qrc:/images/calendar-active.svg" : "qrc:/images/calendar.svg"
-        //             sourceSize.width: 24
-        //             sourceSize.height: 24
-        //         }
+                Image {
+                    Layout.alignment: Qt.AlignHCenter
+                    source: bottomNav.activeTab === "date-ideas" ? "qrc:/images/calendar-active.svg" : "qrc:/images/calendar.svg"
+                    sourceSize.width: 24
+                    sourceSize.height: 24
+                }
                 
-        //         Text {
-        //             Layout.alignment: Qt.AlignHCenter
-        //             text: "Date Ideas"
-        //             font.pixelSize: 12
-        //             color: bottomNav.activeTab === "date-ideas" ? "#ec4899" : "#9ca3af"
-        //         }
-        //     }
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "Date Ideas"
+                    font.pixelSize: 12
+                    color: bottomNav.activeTab === "date-ideas" ? "#ec4899" : "#9ca3af"
+                }
+            }
             
-        //     MouseArea {
-        //         anchors.fill: parent
-        //         onClicked: {
-        //             bottomNav.activeTab = "date-ideas"
-        //             tabSelected("date-ideas")
-        //         }
-        //     }
-        // }
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    bottomNav.activeTab = "date-ideas"
+                    tabSelected("date-ideas")
+                }
+            }
+        }
         
         // Linker tab
         Item {
