@@ -31,7 +31,7 @@ function getDailyQuizId(token, callback) {
 
             // If not done for today, proceed with getting an unanswered quiz
             var xhr = new XMLHttpRequest();
-            var url = API_BASE_URL + "/get-unanswered-quizes";
+            var url = API_BASE_URL + "/get-unanswered-quizzes-for-pair";
             var params = "token=" + encodeURIComponent(token);
 
             xhr.open("POST", url, true);
