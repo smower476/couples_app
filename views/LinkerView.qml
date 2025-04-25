@@ -27,8 +27,20 @@ Item {
                     console.log("Link code received:", result)
                     userLinkCode = result;
                 } else {
-                    console.error("Failed to get link code:", result);
-                    userLinkCode = "Error"; // Display error in UI
+                    // Handle 409 (already connected) with new error object
+                    if (result && typeof result === "object" && result.status === 409) {
+                        console.log("Already connected to a partner (409). Showing connected screen.");
+                        partnerLinked = true;
+                        errorMessage = "";
+                    } else if (typeof result === "string" && result.indexOf("409") !== -1) {
+                        // fallback for string error
+                        console.log("Already connected to a partner (409 string). Showing connected screen.");
+                        partnerLinked = true;
+                        errorMessage = "";
+                    } else {
+                        console.error("Failed to get link code:", result);
+                        userLinkCode = "Error"; // Display error in UI
+                    }
                 }
             });
         } else {
@@ -157,8 +169,15 @@ Item {
                                         root.linkPartner(); // Emit signal on successful API call
                                     } else {
                                         console.error("Failed to link partners:", result);
-                                        // Show error message to user in the UI
-                                        root.errorMessage = "Failed to link: " + result;
+                                        // Handle 409 error (already linked)
+                                        if (result && typeof result === "object" && result.status === 409) {
+                                            root.errorMessage = "You are already linked with a partner.";
+                                        } else if (typeof result === "string" && result.indexOf("409") !== -1) {
+                                            root.errorMessage = "You are already linked with a partner.";
+                                        } else {
+                                            // Show error message to user in the UI
+                                            root.errorMessage = "Failed to link: " + (result && result.message ? result.message : result);
+                                        }
                                     }
                                 });
                             } else if (root.jwtToken === "") {

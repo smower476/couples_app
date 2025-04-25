@@ -243,27 +243,41 @@ xhr.send(params);
 }
 
 function getLinkCode(token, callback) {
-var xhr = new XMLHttpRequest();
-var url = API_BASE_URL + "/get-link-code";
-var params = "token=" + encodeURIComponent(token);
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/get-link-code";
+    var params = "token=" + encodeURIComponent(token);
 
-xhr.open("POST", url, true);
-xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-xhr.onreadystatechange = function() {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-        if (xhr.status === 200) {
-            console.log("Link code received:", xhr.responseText);
-            // Assuming the response text is the link code directly, no parsing needed here
-            callback(true, xhr.responseText); // Success, return link code
-        } else {
-            console.error("Get link code error:", xhr.status, xhr.responseText);
-            callback(false, "Failed to get link code: " + xhr.responseText); // Failure
-        }
-    }
-};
+    xhr.onreadystatechange = function() {
+            if (xhr.status === 0) {
+                if (!xhr.responseText) {
+                    console.error("Get link code error: Network error, CORS issue, or server is unreachable.");
+                    callback(false, { status: 0, message: "Network error, CORS issue, or server is unreachable. Check server logs and CORS headers." });
+                } else {
+                    // Sometimes status 0 but responseText is present (rare)
+                    callback(false, { status: 0, message: "Unexpected status 0 with response: " + xhr.responseText });
+                }
+            } else if (xhr.status === 200) {
+                console.log("Link code received:", xhr.responseText);
+                callback(true, xhr.responseText); // Success, return link code
+            } else if (xhr.status === 409) {
+                console.error("Get link code error: user has already been linked");
+                callback(false, { status: 409, message: "User has already been linked." });
+            } else {
+                console.error("Get link code error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to get link code: " + xhr.responseText);
+            }
+    };
 
-xhr.send(params);
+    xhr.onerror = function(e) {
+        // This is called for network errors, CORS, etc.
+        console.error("getLinkCode: onerror triggered. Most likely a network or CORS error.", e);
+        callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered). Check server and browser console for CORS errors." });
+    };
+
+    xhr.send(params);
 }
 
 function linkUsers(token, linkCode, callback) {
