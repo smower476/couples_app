@@ -20,7 +20,7 @@ Item {
     property string errorMessage: ""
     
     // Mood status options
-    property var moodStatuses: ["sad", "angry", "neutral", "happy"]
+    property var moodStatuses: ["angry", "sad", "neutral", "happy"]
     property int currentMoodIndex: -1 // -1 means no mood selected
     
     // Function to convert mood status string to index
@@ -42,14 +42,11 @@ Item {
             currentMoodIndex = moodStatusToIndex(info.mood_status);
             if (currentMoodIndex >= 0) {
                 moodSlider.value = currentMoodIndex;
-                currentMoodText.text = "Current Mood: " + info.mood_status;
             } else {
                 moodSlider.value = 2; // Default to neutral
-                currentMoodText.text = "Current Mood: Not set";
             }
         } else {
             moodSlider.value = 2; // Default to neutral
-            currentMoodText.text = "Current Mood: Not set";
         }
     }
     
@@ -107,7 +104,6 @@ Item {
         if (moodIndex < 0 || moodIndex >= moodStatuses.length) return;
         
         var moodStatus = moodStatuses[moodIndex];
-        currentMoodText.text = "Current Mood: " + moodStatus;
         
         CallAPI.setUserInfo(token, null, moodStatus, function(success, result) {
             if (success) {
@@ -127,7 +123,7 @@ Item {
     // UI Components
     Rectangle {
         anchors.fill: parent
-        color: "#1e1e2e" // Dark background
+        color: "#121212" // Dark background - Keeping this as it's the root background
     }
 
     RowLayout {
@@ -145,7 +141,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 80
-                color: "#313244" // Darker header
+                color: "transparent" // Transparent header to match LinkerView
                 radius: 10
 
                 ColumnLayout {
@@ -157,7 +153,7 @@ Item {
                         text: "Profile"
                         font.pixelSize: 22
                         font.bold: true
-                        color: "#cdd6f4" // Light text
+                        color: "white" // White text for header
                     }
                     
                     Label {
@@ -166,7 +162,7 @@ Item {
                         text: "Loading..."
                         font.pixelSize: 18
                         font.bold: true
-                        color: "#89b4fa" // Blue highlight for username
+                        color: "white" // White text for username
                     }
                 }
             }
@@ -182,7 +178,7 @@ Item {
             Label {
                 Layout.fillWidth: true
                 text: profileRoot.errorMessage
-                color: "#f38ba8" // Red/pink color
+                color: "#ef4444" // Red color for error to match LinkerView
                 wrapMode: Text.WordWrap
                 horizontalAlignment: Text.AlignHCenter
                 visible: profileRoot.errorMessage !== ""
@@ -193,7 +189,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 180
-                color: "#313244" // Dark card background
+                color: "#1f1f1f" // Dark card background to match LinkerView input field
                 radius: 10
                 visible: profileRoot.userInfo !== null
 
@@ -212,14 +208,14 @@ Item {
                             text: "Your Information"
                             font.bold: true
                             font.pixelSize: 18
-                            color: "#cdd6f4" // Light text
+                            color: "#9ca3af" // Gray text for label
                         }
 
                         Label {
                             id: linkedStatusText
                             text: "Linked: Loading..."
                             font.pixelSize: 16
-                            color: "#cdd6f4" // Light text
+                            color: "white" // White text for linked status
                             wrapMode: Text.WordWrap
                         }
                     }
@@ -228,7 +224,7 @@ Item {
                     Rectangle {
                         Layout.fillHeight: true
                         width: 1
-                        color: "#585b70" // Separator color
+                        color: "#313244" // Separator color
                         visible: profileRoot.partnerInfo !== null
                     }
 
@@ -243,14 +239,14 @@ Item {
                             text: "Partner Information"
                             font.bold: true
                             font.pixelSize: 18
-                            color: "#cdd6f4" // Light text
+                            color: "#9ca3af" // Gray text for label
                         }
 
                         Label {
                             id: partnerUsernameText
                             text: "Partner: Loading..."
                             font.pixelSize: 16
-                            color: "#cdd6f4" // Light text
+                            color: "white" // White text for partner username
                             wrapMode: Text.WordWrap
                         }
 
@@ -258,162 +254,158 @@ Item {
                             id: partnerMoodText
                             text: "Partner Mood: Loading..."
                             font.pixelSize: 16
-                            color: "#cdd6f4" // Light text
+                            color: "white" // White text for partner mood
                             wrapMode: Text.WordWrap
                         }
                     }
                 }
             }
 
-            // Mood Scale Card
-            Rectangle {
+            // Mood Section
+            ColumnLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 150
-                color: "#313244" // Dark card background
-                radius: 10
-
-                ColumnLayout {
+                Layout.preferredHeight: 150 // Keep preferred height for layout
+                spacing: 10
+                // Background color matching main background
+                Rectangle {
                     anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 10                // Mood Section - directly in the layout without its own card
-                    
-                    Label {
-                        text: "Your Mood"
-                        font.bold: true
-                        font.pixelSize: 18
-                        color: "#cdd6f4" // Light text
+                    color: "#121212" // Main background color from main.qml
+                }
+
+                // Mood slider container with simplified positioning
+Label {
+                    text: "Set your mood"
+                    font.pixelSize: 18
+                    font.bold: true // Keep bold for consistency with previous "Your Mood"
+                    color: "#9ca3af" // Gray text for label
+                    Layout.leftMargin: 15
+                    Layout.rightMargin: 15
+                    Layout.topMargin: 15 // Add top margin
+                }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 60
+                    Layout.leftMargin: 15 // Add margins to match previous card padding
+                    Layout.rightMargin: 15
+                    Layout.topMargin: 15 // Add top margin to the slider container
+
+                    // Upper bracket indicator
+                    Rectangle {
+                        id: upperBracket
+                        width: 20
+                        height: 10
+                        color: "#ec4899" // Pink indicator to match LinkerView accent
+                        anchors {
+                            bottom: sliderRow.top
+                            bottomMargin: 5
+                        }
+                        x: moodSlider.visualPosition * (sliderRow.width - width)
                     }
 
-                    Label {
-                        id: currentMoodText
-                        text: "Current Mood: Not set"
-                        font.pixelSize: 16
-                        color: "#cdd6f4" // Light text
-                    }
-
-                    // Mood slider container with simplified positioning
+                    // Colored mood slider
                     Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 60
-                        
-                        // Upper bracket indicator
-                        Rectangle {
-                            id: upperBracket
-                            width: 20
-                            height: 10
-                            color: "#cba6f7" // Purple indicator
-                            anchors {
-                                bottom: sliderRow.top
-                                bottomMargin: 5
-                            }
-                            x: moodSlider.visualPosition * (sliderRow.width - width)
+                        id: sliderRow
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
                         }
+                        height: 30
 
-                        // Colored mood slider
-                        Item {
-                            id: sliderRow
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                verticalCenter: parent.verticalCenter
-                            }
-                            height: 30
-                            
-                            Row {
-                                anchors.fill: parent
-                                
-                                Rectangle {
-                                    width: parent.width / 4
-                                    height: parent.height
-                                    color: "#f38ba8" // Red for sad
-                                    
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Sad"
-                                        color: "#1e1e2e" // Dark text
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: parent.width / 4
-                                    height: parent.height
-                                    color: "#f9e2af" // Yellow for angry
-                                    
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Angry"
-                                        color: "#1e1e2e" // Dark text
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: parent.width / 4
-                                    height: parent.height
-                                    color: "#89b4fa" // Blue for neutral
-                                    
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Neutral"
-                                        color: "#1e1e2e" // Dark text
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: parent.width / 4
-                                    height: parent.height
-                                    color: "#a6e3a1" // Green for happy
-                                    
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "Happy"
-                                        color: "#1e1e2e" // Dark text
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                    }
-                                }
-                            }
-                        }
-
-                        // Invisible slider on top for interaction
-                        Slider {
-                            id: moodSlider
+                        Row {
                             anchors.fill: parent
-                            from: 0
-                            to: 3
-                            stepSize: 1
-                            value: 2 // Default to neutral
-                            snapMode: Slider.SnapAlways
-                            
-                            background: Rectangle {
-                                color: "transparent" // Make background invisible
-                            }
-                            
-                            handle: Item {
-                                // No visible handle as we're using brackets instead
+
+                            Rectangle {
+                                width: parent.width / 4
+                                height: parent.height
+                                color: "#f38ba8" // Red for sad
+                                
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Angry"
+                                    color: "#1e1e2e" // Dark text
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
                             }
 
-                            onMoved: {
-                                profileRoot.updateMood(Math.round(value))
+                            Rectangle {
+                                width: parent.width / 4
+                                height: parent.height
+                                color: "#f9e2af" // Yellow for angry
+                                
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Sad"
+                                    color: "#1e1e2e" // Dark text
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
                             }
+
+                            Rectangle {
+                                width: parent.width / 4
+                                height: parent.height
+                                color: "#89b4fa" // Blue for neutral
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Neutral"
+                                    color: "#1e1e2e" // Dark text
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
+                            }
+
+                            Rectangle {
+                                width: parent.width / 4
+                                height: parent.height
+                                color: "#a6e3a1" // Green for happy
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "Happy"
+                                    color: "#1e1e2e" // Dark text
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
+                            }
+                        }
+                    }
+
+                    // Invisible slider on top for interaction
+                    Slider {
+                        id: moodSlider
+                        anchors.fill: parent
+                        from: 0
+                        to: 3
+                        stepSize: 1
+                        value: 2 // Default to neutral
+                        snapMode: Slider.SnapAlways
+
+                        background: Rectangle {
+                            color: "transparent" // Make background invisible
                         }
 
-                        // Lower bracket indicator
-                        Rectangle {
-                            width: 20
-                            height: 10
-                            color: "#cba6f7" // Purple indicator
-                            anchors {
-                                top: sliderRow.bottom
-                                topMargin: 5
-                            }
-                            x: moodSlider.visualPosition * (sliderRow.width - width)
+                        handle: Item {
+                            // No visible handle as we're using brackets instead
                         }
+
+                        onMoved: {
+                            profileRoot.updateMood(Math.round(value))
+                        }
+                    }
+
+                    // Lower bracket indicator
+                    Rectangle {
+                        width: 20
+                        height: 10
+                        color: "#ec4899" // Pink indicator to match LinkerView accent
+                        anchors {
+                            top: sliderRow.bottom
+                            topMargin: 5
+                        }
+                        x: moodSlider.visualPosition * (sliderRow.width - width)
                     }
                 }
             }
@@ -435,8 +427,8 @@ Item {
                         width: 120
                         height: 45
                         text: "Refresh"
-                        Material.background: "#89b4fa" // Blue
-                        Material.foreground: "#1e1e2e" // Dark text
+                        Material.background: "#ec4899" // Pink background to match LinkerView button
+                        Material.foreground: "white" // White text to match LinkerView button
                         onClicked: profileRoot.onRefreshClicked()
                     }
                     Button {
@@ -444,8 +436,8 @@ Item {
                         width: 120
                         height: 45
                         text: "Logout"
-                        Material.background: "#f38ba8" // Red/pink
-                        Material.foreground: "#1e1e2e" // Dark text
+                        Material.background: "#ec4899" // Pink background to match LinkerView button
+                        Material.foreground: "white" // White text to match LinkerView button
                         onClicked: {
                             console.log("Logout clicked")
                             profileRoot.logoutRequested()
