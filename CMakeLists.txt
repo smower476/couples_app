@@ -28,6 +28,7 @@ set(QML_FILES
     # Commented views that may be used later
     views/DailyQuestionView.qml
     views/DateIdeasView.qml
+    views/QuizHistoryDetailView.qml
 )
 
 # Define image resources

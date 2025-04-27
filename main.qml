@@ -68,6 +68,8 @@ ApplicationWindow {
                 return 6
             case "register": // Add register view index
                 return 7
+            case "quizHistoryDetail": // Add quiz history detail view index
+                return 8 // Assign a new index
             default:
                 return 0 // Default to hub
             }
@@ -79,6 +81,7 @@ ApplicationWindow {
             quizResponses: window.quizResponses
             dailyResponses: window.dailyResponses
             dateIdeasHistory: window.dateIdeasHistory
+            jwtToken: window.jwtToken // Pass the JWT token to HubView
         }
 
         // Quizzes view
@@ -323,7 +326,14 @@ ApplicationWindow {
             }
         }
         // --- End Register View ---
-    }
+
+        // Quiz History Detail View
+        QuizHistoryDetailView {
+            id: quizHistoryDetailView
+            jwtToken: window.jwtToken // Pass the JWT token
+            // rawAnsweredQuizData will be set by showQuizHistoryDetail function
+        }
+    } // Closing brace for StackLayout
 
     // Bottom navigation
     BottomNavigation {
@@ -353,5 +363,12 @@ ApplicationWindow {
         } else {
             window.currentView = "login"
         }
+    }
+
+    // Function to show the quiz history detail view
+    function showQuizHistoryDetail(quizData) {
+        //console.log("main.qml: showQuizHistoryDetail called with data:", JSON.stringify(quizData));
+        quizHistoryDetailView.rawAnsweredQuizData = quizData; // Pass the raw data
+        window.currentView = "quizHistoryDetail"; // Switch to the detail view
     }
 }

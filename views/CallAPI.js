@@ -12,16 +12,13 @@ function getDailyQuizId(token, callback) {
     getAnsweredQuizzes(token, function(success, answeredQuizzes) {
         if (success) {
             if (answeredQuizzes.length > 0) {
-                // Get the timestamp of the last completed quiz
-                const lastCompletedQuiz = answeredQuizzes[answeredQuizzes.length - 1];
+                // Get the most recent completed quiz (first element after sorting descending)
+                const lastCompletedQuiz = answeredQuizzes[0];
                 // Defensive: check for user_answer and answered_at, else fallback to created_at
                 let lastCompletedTime = null;
-                if (lastCompletedQuiz.user_answer && lastCompletedQuiz.user_answer.answered_at) {
-                    lastCompletedTime = new Date(lastCompletedQuiz.user_answer.answered_at).getTime();
-                } else if (lastCompletedQuiz.self_answered_at) {
-                    lastCompletedTime = new Date(lastCompletedQuiz.self_answered_at).getTime();
-                } else if (lastCompletedQuiz.created_at) {
-                    lastCompletedTime = new Date(lastCompletedQuiz.created_at).getTime();
+                const timestamp = lastCompletedQuiz.user_answer?.answered_at || lastCompletedQuiz.self_answered_at || lastCompletedQuiz.created_at;
+                if (timestamp) {
+                    lastCompletedTime = new Date(timestamp).getTime();
                 }
                 if (lastCompletedTime) {
                     const now = Date.now();
@@ -110,11 +107,18 @@ function getAnsweredQuizzes(token, callback) {
                     const answeredQuizzes = JSON.parse(responseText);
                     // Defensive: ensure always array
                     if (Array.isArray(answeredQuizzes)) {
+                        // Sort by timestamp (descending - most recent first)
+                        answeredQuizzes.sort((a, b) => {
+                            const timeA = new Date(a.user_answer?.answered_at || a.self_answered_at || a.created_at || 0).getTime();
+                            const timeB = new Date(b.user_answer?.answered_at || b.self_answered_at || b.created_at || 0).getTime();
+                            return timeB - timeA; // Descending order
+                        });
                         callback(true, answeredQuizzes);
                     } else if (answeredQuizzes) {
+                        // If single object, wrap in array (already sorted)
                         callback(true, [answeredQuizzes]);
                     } else {
-                        callback(true, []);
+                        callback(true, []); // Empty array
                     }
                 } catch (e) {
                     //console.error("Error processing answered quizzes:", e);
