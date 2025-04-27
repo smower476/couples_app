@@ -269,9 +269,8 @@ ApplicationWindow {
 
         ProfileView {
             id: profileView
+            token: window.jwtToken // Bind the main window's token to the profile view's token property
             // Pass username to profile view
-            displayInfo: "Username: " + (window.currentUsername ? window.currentUsername : "[Not Logged In]")
-
             // Connect to signal from ProfileView
             onLogoutRequested: () => {
                 //console.log("Logout requested");

@@ -361,7 +361,7 @@ function answerQuiz(token, quizId, answers, callback) {
 
 function getPartnerInfo(token, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/set-partner-info";
+    var url = API_BASE_URL + "/get-partner-info";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true); // Changed to POST method based on working shell script
@@ -390,6 +390,80 @@ function getPartnerInfo(token, callback) {
 
     xhr.onerror = function(e) {
         //console.error("getPartnerInfo: onerror triggered. Network or CORS error.", e);
+        callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered)." });
+    };
+
+    xhr.send(params);
+}
+
+function getUserInfo(token, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/get-user-info";
+    var params = "token=" + encodeURIComponent(token);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        console.log("responseText:", xhr.responseText);
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("User info received:", xhr.responseText);
+                try {
+                    // Wrap number fields before parsing for consistency
+                    const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
+                    const userInfo = JSON.parse(responseText); // Parse the modified text
+                    callback(true, userInfo); // Success, return user info
+                } catch (e) {
+                    callback(false, "Failed to parse user info: " + e.message);
+                }
+            } else {
+                callback(false, { status: xhr.status, message: "Failed to get user info: " + xhr.responseText });
+            }
+        }
+    };
+
+    xhr.onerror = function(e) {
+        callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered)." });
+    };
+
+    xhr.send(params);
+}
+
+function setUserInfo(token, moodScale, moodStatus, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/set-user-info";
+    var params = "token=" + encodeURIComponent(token);
+    
+    // Add mood_scale parameter if provided
+    if (moodScale !== undefined && moodScale !== null) {
+        params += "&mood_scale=" + encodeURIComponent(moodScale);
+    } else {
+        params += "&mood_scale=";  // Empty value as seen in the test script
+    }
+    
+    // Add mood_status parameter if provided
+    if (moodStatus !== undefined && moodStatus !== null) {
+        params += "&mood_status=" + encodeURIComponent(moodStatus);
+    } else {
+        params += "&mood_status=";  // Empty value as seen in the test script
+    }
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("User info updated:", xhr.responseText);
+                callback(true, xhr.responseText); // Success
+            } else {
+                callback(false, "Failed to update user info: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.onerror = function(e) {
         callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered)." });
     };
 
