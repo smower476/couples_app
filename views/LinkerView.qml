@@ -207,7 +207,7 @@ Item {
                                         //console.error("Failed to link partners:", result);
                                         // Handle 409 error (already linked)
                                         if (result && typeof result === "object" && result.status === 409) {
-                                            console.log("409 error received in linkUsers. Attempting to fetch partner info."); // Debug statement
+                                           //console.log("409 error received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
                                             // Optionally fetch partner info here too if linking fails due to already linked
                                             CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
@@ -222,7 +222,7 @@ Item {
                                                 }
                                             });
                                         } else if (typeof result === "string" && result.indexOf("409") !== -1) {
-                                            console.log("409 error (string fallback) received in linkUsers. Attempting to fetch partner info."); // Debug statement
+                                           //console.log("409 error (string fallback) received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
                                             // Optionally fetch partner info here too if linking fails due to already linked (string fallback)
                                             CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {

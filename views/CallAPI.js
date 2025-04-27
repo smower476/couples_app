@@ -305,39 +305,50 @@ function linkUsers(token, linkCode, callback) {
     xhr.send(params);
 }
 
-function answerQuiz(token, quizId, answers, callback) {
-    let binaryString = "";
-    for (const answer of answers) {
+function answerQuiz(token, quizId, selfAnswers, partnerGuesses, callback) {
+    // Combine self answers and partner guesses into a single array
+    const combinedAnswers = selfAnswers.concat(partnerGuesses);
+    //console.log("Combined answers array:", JSON.stringify(combinedAnswers));
+
+    // Encode the combined array
+    let combinedBinaryString = "";
+    for (const answer of combinedAnswers) {
         // Convert answer (1-4) to 2-bit binary (00-11)
-        // 1 -> 00, 2 -> 01, 3 -> 10, 4 -> 11
         switch (answer) {
-            case 1:
-                binaryString += "00";
-                break;
-            case 2:
-                binaryString += "01";
-                break;
-            case 3:
-                binaryString += "10";
-                break;
-            case 4:
-                binaryString += "11";
-                break;
+            case 1: combinedBinaryString += "00"; break;
+            case 2: combinedBinaryString += "01"; break;
+            case 3: combinedBinaryString += "10"; break;
+            case 4: combinedBinaryString += "11"; break;
             default:
-                //console.error("Invalid answer value:", answer);
-                callback(false, "Invalid answer value provided.");
+                //console.error("Invalid answer/guess value in combined array:", answer);
+                callback(false, "Invalid answer/guess value provided.");
                 return;
         }
     }
 
-    // Convert binary string to base 10 integer
-    const base10Answer = parseInt(binaryString, 2);
-    //console.log("Binary answer string:", binaryString);
-    //console.log("Base 10 answer:", base10Answer);
+    // Ensure the binary string length is correct (2 bits * (num_questions * 2))
+    const numQuestions = selfAnswers.length; // Original number of questions
+    const expectedLength = numQuestions * 2 * 2; // 2 bits per answer/guess, 2 sets (self + guess)
+    if (combinedBinaryString.length !== expectedLength) {
+        //console.error(`Combined binary string length mismatch. Expected ${expectedLength}, got ${combinedBinaryString.length}`);
+        // Pad with leading zeros if necessary
+        while (combinedBinaryString.length < expectedLength) {
+            combinedBinaryString = "0" + combinedBinaryString;
+        }
+        // Alternatively, handle as an error:
+        // callback(false, "Internal error: Combined answer encoding length mismatch.");
+        // return;
+    }
+
+    const base10CombinedAnswer = parseInt(combinedBinaryString, 2);
+    //console.log("Combined Binary:", combinedBinaryString, "-> Base 10:", base10CombinedAnswer);
 
     var xhr = new XMLHttpRequest();
     var url = API_BASE_URL + "/answer-quiz";
-    var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId) + "&answer=" + encodeURIComponent(base10Answer);
+    // Send only the combined answer as the 'answer' parameter
+    var params = "token=" + encodeURIComponent(token) +
+                 "&quiz_id=" + encodeURIComponent(quizId) +
+                 "&answer=" + encodeURIComponent(base10CombinedAnswer); // Send combined value
 
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -366,12 +377,12 @@ function getPartnerInfo(token, callback) {
 
     xhr.open("POST", url, true); // Changed to POST method based on working shell script
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    console.log("getPartnerInfo params:", params);
-    console.log("getPartnerInfo method: POST"); // Debug log for method
+   //console.log("getPartnerInfo params:", params);
+   //console.log("getPartnerInfo method: POST"); // Debug log for method
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Partner info received:", xhr.responseText);
+               //console.log("Partner info received:", xhr.responseText);
                 try {
                     // Assuming partner info is JSON, parse it
                     const partnerInfo = JSON.parse(xhr.responseText);
@@ -405,10 +416,10 @@ function getUserInfo(token, callback) {
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
     xhr.onreadystatechange = function() {
-        console.log("responseText:", xhr.responseText);
+       //console.log("responseText:", xhr.responseText);
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("User info received:", xhr.responseText);
+               //console.log("User info received:", xhr.responseText);
                 try {
                     // Wrap number fields before parsing for consistency
                     const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
@@ -455,7 +466,7 @@ function setUserInfo(token, moodScale, moodStatus, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("User info updated:", xhr.responseText);
+               //console.log("User info updated:", xhr.responseText);
                 callback(true, xhr.responseText); // Success
             } else {
                 callback(false, "Failed to update user info: " + xhr.responseText); // Failure

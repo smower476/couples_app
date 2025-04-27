@@ -13,9 +13,11 @@ Item {
     property var quizData: null
     property int questionIndex: 0
     property var responses: []
-    property var currentQuizAnswers: [] // To store selected answer indices (1-based)
+    property var currentQuizAnswers: [] // To store selected answer indices (1-based) for self
+    property var partnerGuesses: []     // To store selected answer indices (1-based) for partner guess
 
     // Internal properties
+    property string quizPhase: "answeringSelf" // "answeringSelf", "guessingPartner"
     property string apiKey_: ""
     property string jwtToken: ""
 
@@ -61,8 +63,11 @@ Item {
                 };
                 //console.log("Transformed Quiz:", JSON.stringify(transformedQuiz));
                 root.quizFetched(transformedQuiz);
-                // Initialize currentQuizAnswers array with placeholders
-                root.currentQuizAnswers = new Array(transformedQuiz.questions.length).fill(0);
+                // Initialize answer arrays with placeholders
+                const numQuestions = transformedQuiz.questions.length;
+                root.currentQuizAnswers = new Array(numQuestions).fill(0);
+                root.partnerGuesses = new Array(numQuestions).fill(0);
+                root.quizPhase = "answeringSelf"; // Reset phase on new quiz
             } else {
                 //console.error("Failed to process quiz content or quiz_content is empty:", quizContent);
                 root.quizFetched(null);
@@ -110,17 +115,28 @@ Item {
                 CallAPI.getQuizContent(root.jwtToken, completedQuizId, function(success, quizContent) {
                     if (success && quizContent && quizContent.quiz_content) {
                         // Helper to decode base10 answer to array of 1-based indices
-                        function decodeAnswers(encoded, questionCount) {
+                        // Now expects 'itemCount' which could be questionCount or questionCount * 2
+                        function decodeAnswers(encoded, itemCount) {
                             let encoded_num = parseInt(encoded, 10);
+                            if (isNaN(encoded_num)) {
+                                //console.error("decodeAnswers: Invalid encoded value", encoded);
+                                return new Array(itemCount).fill(0); // Return array of 0s on error
+                            }
                             let bin = encoded_num.toString(2);
-                            // Pad with leading zeros to ensure 2 bits per question
-                            while (bin.length < questionCount * 2) {
+                            const expectedBits = itemCount * 2;
+                            // Pad with leading zeros to ensure 2 bits per item
+                            while (bin.length < expectedBits) {
                                 bin = "0" + bin;
                             }
+                            // Truncate if too long (shouldn't happen with correct padding)
+                            if (bin.length > expectedBits) {
+                                bin = bin.substr(bin.length - expectedBits);
+                            }
+                            console.log("DEBUG: decodeAnswers - encoded:", encoded, "binary:", bin, "itemCount:", itemCount);
                             let arr = [];
-                            for (let i = 0; i < questionCount; ++i) {
+                            for (let i = 0; i < itemCount; ++i) {
                                 let bits = bin.substr(i * 2, 2);
-                                arr.push(parseInt(bits, 2) + 1);
+                                arr.push(parseInt(bits, 2) + 1); // 1-based index
                             }
                             return arr;
                         }
@@ -128,39 +144,130 @@ Item {
                         const questionCount = quizContent.quiz_content.length;
                         let selfAnswers = [];
                         let partnerAnswers = [];
-                        //console.log("DEBUG: self_answer (int):", typeof(lastAnsweredQuiz.self_answer));
-                        selfAnswers = decodeAnswers(lastAnsweredQuiz.self_answer, questionCount);
-                        //console.log("DEBUG: self_answer (int):", typeof(selfAnswers));
-        
-                        //console.log("DEBUG: partner_answer (int):", lastAnsweredQuiz.partner_answer);
-                        // If partner_answer is null or "null", fill with "Partner didn't answer"
-                        let partnerDidntAnswer = lastAnsweredQuiz.partner_answer === null || lastAnsweredQuiz.partner_answer === "null";
-                        if (!partnerDidntAnswer) {
-                            partnerAnswers = decodeAnswers(lastAnsweredQuiz.partner_answer, questionCount);
+                        let yourGuesses = []; // Array to hold decoded guesses about partner's answers
+                        let partnerGuessesAboutSelf = []; // Array to hold partner's guesses about your answers
+                        let partnerCorrectGuesses = 0; // Counter for partner's correct guesses about your answers
+                        let yourCorrectGuesses = 0; // Counter for your correct guesses about partner's answers
+
+                        // Decode combined self answers and guesses from self_answer field
+                        //console.log("DEBUG: self_answer (raw combined):", lastAnsweredQuiz.self_answer);
+                        if (lastAnsweredQuiz.self_answer) {
+                            // Decode expecting data for questionCount * 2 items
+                            const combinedDecoded = decodeAnswers(lastAnsweredQuiz.self_answer, questionCount * 2);
+                            // Split into self answers (first half) and guesses (second half)
+                            selfAnswers = combinedDecoded.slice(0, questionCount);
+                            yourGuesses = combinedDecoded.slice(questionCount);
+                        } else {
+                            // If no self_answer, fill both with 0s
+                            selfAnswers = new Array(questionCount).fill(0);
+                            yourGuesses = new Array(questionCount).fill(0);
                         }
+                        //console.log("DEBUG: self_answer (decoded):", JSON.stringify(selfAnswers));
+                        //console.log("DEBUG: your_guesses (decoded):", JSON.stringify(yourGuesses));
+
+                        // Decode combined partner answers and guesses from partner_answer field
+                        //console.log("DEBUG: partner_answer (raw combined):", lastAnsweredQuiz.partner_answer);
+                        let partnerDidntAnswer = lastAnsweredQuiz.partner_answer === null || lastAnsweredQuiz.partner_answer === "null" || lastAnsweredQuiz.partner_answer === undefined;
+                        if (!partnerDidntAnswer) {
+                            // Decode expecting data for questionCount * 2 items
+                            const partnerCombinedDecoded = decodeAnswers(lastAnsweredQuiz.partner_answer, questionCount * 2);
+                            // Split into partner answers (first half) and partner guesses about self (second half)
+                            partnerAnswers = partnerCombinedDecoded.slice(0, questionCount);
+                            partnerGuessesAboutSelf = partnerCombinedDecoded.slice(questionCount);
+                        } else {
+                            // If no partner_answer, fill both with 0s
+                            partnerAnswers = new Array(questionCount).fill(0);
+                            partnerGuessesAboutSelf = new Array(questionCount).fill(0);
+                        }
+                        //console.log("DEBUG: partner_answer (decoded):", JSON.stringify(partnerAnswers));
+                        //console.log("DEBUG: partner_guesses_about_self (decoded):", JSON.stringify(partnerGuessesAboutSelf));
+
+                        // We no longer need a separate 'didNotGuess' flag based on a separate field,
+                        // as guesses are now part of the main answer field.
+                        // We determine if a guess exists by checking the decoded yourGuesses array.
 
                         const transformedResults = {
                             id: completedQuizId,
                             title: quizName,
+                            totalQuestions: questionCount, // Store total questions
+                            correctGuesses: 0, // Initialize score
                             questions: quizContent.quiz_content.map((question, index) => {
                                 const questionText = question.content_data;
+
+                                // Get self answer text
                                 const selfIdx = (selfAnswers.length > index) ? selfAnswers[index] - 1 : -1;
-                                const partnerIdx = (!partnerDidntAnswer && partnerAnswers.length > index) ? partnerAnswers[index] - 1 : -1;
                                 const selfText = (selfIdx >= 0 && question.answers[selfIdx])
                                     ? question.answers[selfIdx].answer_content
                                     : "No answer";
+
+                                // Get partner's actual answer text
+                                const partnerIdx = (!partnerDidntAnswer && partnerAnswers.length > index) ? partnerAnswers[index] - 1 : -1;
                                 const partnerText = partnerDidntAnswer
                                     ? "Partner didn't answer"
                                     : ((partnerIdx >= 0 && question.answers[partnerIdx])
                                         ? question.answers[partnerIdx].answer_content
                                         : "No answer");
+
+                                // Get your guess text (using decoded yourGuesses array)
+                                let yourGuessText = "No guess"; // Default
+                                const yourGuessValue = (yourGuesses.length > index) ? yourGuesses[index] : 0; // Get the decoded guess (1-4, or 0 if missing)
+                                if (yourGuessValue > 0) { // Check if a valid guess (1-4) exists
+                                    const yourGuessIdx = yourGuessValue - 1;
+                                    if (yourGuessIdx >= 0 && question.answers[yourGuessIdx]) {
+                                        yourGuessText = question.answers[yourGuessIdx].answer_content;
+                                    }
+                                    // If yourGuessIdx is invalid, yourGuessText remains "No guess"
+                                }
+
+                                // Get partner's guess about your answer text
+                                let partnerGuessAboutSelfText = "No guess"; // Default
+                                const partnerGuessValue = (partnerGuessesAboutSelf.length > index) ? partnerGuessesAboutSelf[index] : 0; // Get the decoded guess (1-4, or 0 if missing)
+                                const partnerGuessed = partnerGuessValue > 0;
+                                if (partnerGuessed) { // Check if a valid guess (1-4) exists
+                                    const partnerGuessIdx = partnerGuessValue - 1;
+                                    if (partnerGuessIdx >= 0 && question.answers[partnerGuessIdx]) {
+                                        partnerGuessAboutSelfText = question.answers[partnerGuessIdx].answer_content;
+                                    }
+                                    // If partnerGuessIdx is invalid, partnerGuessAboutSelfText remains "No guess"
+                                }
+
+
+                                // Check if partner's guess about your answer was correct
+                                let partnerGuessCorrect = false;
+                                // Ensure partner answered, a valid guess exists, and arrays have data for this index
+                                if (!partnerDidntAnswer && partnerGuessValue > 0 && selfAnswers.length > index && partnerGuessesAboutSelf.length > index) {
+                                    partnerGuessCorrect = (selfAnswers[index] === partnerGuessesAboutSelf[index]);
+                                    if (partnerGuessCorrect) {
+                                        partnerCorrectGuesses++; // Increment partner's overall score
+                                    }
+                                }
+
+                                // Check if your guess about partner's answer was correct
+                                let yourGuessCorrect = false;
+                                // Ensure partner answered, a valid guess exists, and arrays have data for this index
+                                if (!partnerDidntAnswer && yourGuessValue > 0 && partnerAnswers.length > index && yourGuesses.length > index) {
+                                    yourGuessCorrect = (yourGuesses[index] === partnerAnswers[index]);
+                                    if (yourGuessCorrect) {
+                                        yourCorrectGuesses++; // Increment your overall score
+                                    }
+                                }
+
+
                                 return {
                                     question: questionText,
                                     self: selfText,
-                                    partner: partnerText
+                                    partner: partnerText,
+                                    yourGuess: yourGuessText, // Your guess about partner's answer
+                                    yourGuessCorrect: yourGuessCorrect, // Was your guess about partner's answer correct?
+                                    partnerGuessAboutSelf: partnerGuessAboutSelfText, // Partner's guess about your answer
+                                    partnerGuessCorrect: partnerGuessCorrect // Was partner's guess about your answer correct?
                                 };
                             })
                         };
+                        // Add final scores to the results object
+                        transformedResults.partnerCorrectGuesses = partnerCorrectGuesses; // How many of your answers your partner guessed correctly
+                        transformedResults.yourCorrectGuesses = yourCorrectGuesses; // How many of partner's answers you guessed correctly
+
                         root.completedQuizData = transformedResults;
                         //console.log("Fetched and transformed completed quiz data:", JSON.stringify(root.completedQuizData, null, 2));
                     } else {
@@ -195,7 +302,11 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: root.quizData ? root.quizData.title : "🤔 Loading Quiz..."
+                text: {
+                    if (!root.quizData) return "🤔 Loading Quiz...";
+                    if (root.quizPhase === "answeringSelf") return root.quizData.title;
+                    return "🤔 Guess Partner's Answers"; // Title for guessing phase
+                }
                 font.pixelSize: 24
                 font.bold: true
                 color: "white"
@@ -216,10 +327,17 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: "Question " + (root.questionIndex + 1) + " of " +
-                      (root.quizData ? root.quizData.questions.length : 0)
+                text: {
+                    const totalQuestions = root.quizData ? root.quizData.questions.length : 0;
+                    const currentQ = root.questionIndex + 1;
+                    if (root.quizPhase === "answeringSelf") {
+                        return "Question " + currentQ + " of " + totalQuestions;
+                    } else {
+                        return "Guessing Partner: Question " + currentQ + " of " + totalQuestions;
+                    }
+                }
                 font.pixelSize: 16
-                color: "#9ca3af"
+                color: root.quizPhase === "answeringSelf" ? "#9ca3af" : "#f0abfc" // Different color for guessing phase
             }
         }
 
@@ -263,7 +381,16 @@ Item {
                         fill: parent
                         margins: 20
                     }
-                    text: root.quizData ? root.quizData.questions[root.questionIndex].question : ""
+                    text: {
+                        if (!root.quizData) return "";
+                        const baseQuestion = root.quizData.questions[root.questionIndex].question;
+                        if (root.quizPhase === "answeringSelf") {
+                            return baseQuestion;
+                        } else {
+                            // Add prompt for guessing phase
+                            return "What do you think your partner answered?\n\n" + baseQuestion;
+                        }
+                    }
                     font.pixelSize: 20
                     color: "white"
                     wrapMode: Text.Wrap
@@ -310,7 +437,11 @@ Item {
                         property bool isSelected: {
                             if (!root.quizData || !root.currentQuizAnswers) return false;
                             // Check if the stored answer index for this question matches this option's index + 1
-                            return root.currentQuizAnswers[root.questionIndex] === index + 1;
+                            if (root.quizPhase === "answeringSelf") {
+                                return root.currentQuizAnswers[root.questionIndex] === index + 1;
+                            } else {
+                                return root.partnerGuesses[root.questionIndex] === index + 1;
+                            }
                         }
 
                         // Colored border based on selection status
@@ -351,27 +482,51 @@ Item {
                             anchors.fill: parent
                             onClicked: {
                                 if (root.quizData) {
-                                    // Store the 1-based index of the selected answer
-                                    root.currentQuizAnswers[root.questionIndex] = index + 1;
-                                    //console.log("Selected answer for question", root.questionIndex, ":", root.currentQuizAnswers[root.questionIndex]);
+                                    const numQuestions = root.quizData.questions.length;
+                                    const currentQIndex = root.questionIndex;
+                                    const selectedAnswerIndex = index + 1;
 
-                                    // Check if all questions have been answered
-                                    if (root.currentQuizAnswers.every(answer => answer !== 0)) {
-                                        //console.log("All questions answered. Submitting quiz.");
-                                        CallAPI.answerQuiz(root.jwtToken, root.quizData.id, root.currentQuizAnswers, function(success, response) {
-                                            if (success) {
-                                                //console.log("Quiz submitted successfully:", response);
-                                                // Fetch completed quiz results after successful submission
-                                                fetchCompletedQuizResults();
-                                                root.quizCompleted = true; // Show completion view
-                                            } else {
-                                                //console.error("Failed to submit quiz:", response);
-                                                // Handle submission failure (e.g., show an error message)
-                                            }
-                                        });
-                                    } else {
-                                        // Move to the next question if not all answered
-                                        if (root.questionIndex < root.quizData.questions.length - 1) {
+                                    if (root.quizPhase === "answeringSelf") {
+                                        // Store self answer
+                                        root.currentQuizAnswers[currentQIndex] = selectedAnswerIndex;
+                                        //console.log("Self answer for Q", currentQIndex, ":", selectedAnswerIndex);
+
+                                        // Check if this was the last question for self
+                                        if (currentQIndex === numQuestions - 1) {
+                                            // Transition to guessing phase
+                                            root.quizPhase = "guessingPartner";
+                                            root.questionIndex = 0; // Reset for guessing
+                                            //console.log("Transitioning to guessing phase");
+                                        } else {
+                                            // Move to next question for self
+                                            root.questionIndex++;
+                                        }
+                                    } else { // quizPhase === "guessingPartner"
+                                        // Store partner guess
+                                        root.partnerGuesses[currentQIndex] = selectedAnswerIndex;
+                                        //console.log("Partner guess for Q", currentQIndex, ":", selectedAnswerIndex);
+
+                                        // Check if this was the last question for guessing
+                                        if (currentQIndex === numQuestions - 1) {
+                                            // All guesses are done, submit both sets of answers
+                                            //console.log("All guesses complete. Submitting quiz.");
+                                            //console.log("Self Answers:", JSON.stringify(root.currentQuizAnswers));
+                                            //console.log("Partner Guesses:", JSON.stringify(root.partnerGuesses));
+
+                                            // *** TODO: Update CallAPI.answerQuiz to accept partnerGuesses ***
+                                            CallAPI.answerQuiz(root.jwtToken, root.quizData.id, root.currentQuizAnswers, root.partnerGuesses, function(success, response) {
+                                                if (success) {
+                                                    //console.log("Quiz submitted successfully:", response);
+                                                    // Fetch completed quiz results after successful submission
+                                                    fetchCompletedQuizResults(); // This might need updates too
+                                                    root.quizCompleted = true; // Show completion view
+                                                } else {
+                                                    //console.error("Failed to submit quiz:", response);
+                                                    // Handle submission failure (e.g., show an error message)
+                                                }
+                                            });
+                                        } else {
+                                            // Move to next question for guessing
                                             root.questionIndex++;
                                         }
                                     }
@@ -458,7 +613,7 @@ Item {
                 // Results List Header
                 Text {
                     Layout.fillWidth: true
-                    text: "Your Answers:"
+                    text: "Quiz Results:" // Changed header
                     font.pixelSize: 18
                     font.bold: true
                     color: "white"
@@ -515,8 +670,58 @@ Item {
                                 wrapMode: Text.Wrap
                                 topPadding: 2
                             }
+                            // Add display for partner's guess about your answer and correctness
+                            Text {
+                                width: parent.width
+                                text: "Your Guess: " + (questionObj.yourGuess || "No guess") // Display partner's guess about your answer
+                                font.pixelSize: 14
+                                color: {
+                                    // Color based on whether partner's guess about your answer was correct
+                                    if (!questionObj.yourGuess || questionObj.yourGuess === "No guess") return "#9ca3af"; // Gray if no guess
+                                    return questionObj.guessCorrect ? "#4ade80" : "#f87171"; // Green if correct, Red if incorrect
+                                }
+                                font.bold: true
+                                wrapMode: Text.Wrap
+                                topPadding: 2
+                                visible: questionObj.hasOwnProperty('yourGuess') // Only show if partner guess data is available
+                            }
+                            // Add display for partner's guess about your answer and correctness
+                            Text {
+                                width: parent.width
+                                text: "Partners Guess: " + (questionObj.partnerGuessAboutSelf || "No guess") // Display partner's guess about your answer
+                                font.pixelSize: 14
+                                color: {
+                                    // Color based on whether partner's guess about your answer was correct
+                                    if (!questionObj.partnerGuessAboutSelf || questionObj.partnerGuessAboutSelf === "No guess") return "#9ca3af"; // Gray if no guess
+                                    return questionObj.partnerGuessCorrect ? "#4ade80" : "#f87171"; // Green if correct, Red if incorrect
+                                }
+                                font.bold: true
+                                wrapMode: Text.Wrap
+                                topPadding: 2
+                                visible: questionObj.hasOwnProperty('partnerGuessAboutSelf') // Only show if partner guess data is available
+                            }
                         }
                     }
+                }
+
+                // Add overall score display
+                Text {
+                    id: scoreText
+                    Layout.fillWidth: true
+                    text: {
+                        if (root.completedQuizData && root.completedQuizData.hasOwnProperty('yourCorrectGuesses') && root.completedQuizData.hasOwnProperty('partnerCorrectGuesses') && root.completedQuizData.hasOwnProperty('totalQuestions')) {
+                           const total = root.completedQuizData.totalQuestions;
+                           const yourScore = root.completedQuizData.yourCorrectGuesses;
+                           const partnerScore = root.completedQuizData.partnerCorrectGuesses;
+                           return "Your Guesses Correct: " + yourScore + "/" + total + "\nPartner's Guesses Correct: " + partnerScore + "/" + total;
+                        }
+                        return ""; // Don't show if data isn't ready
+                    }
+                    font.pixelSize: 16
+                    color: "#a5b4fc" // Indigo-300
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.topMargin: 15
+                    visible: text !== "" // Only show when score is calculated
                 }
 
                 // Fallback text when there are no answers to display

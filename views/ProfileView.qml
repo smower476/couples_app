@@ -52,7 +52,7 @@ Item {
     
     // Load user info when token is set
     onTokenChanged: {
-        console.log("ProfileView: onTokenChanged triggered with token:", token);
+       //console.log("ProfileView: onTokenChanged triggered with token:", token);
         if (token) {
             loadUserInfo();
         }
@@ -62,7 +62,7 @@ Item {
     function loadUserInfo() {
         isLoading = true;
         errorMessage = "";
-        console.log("Loading user info with token:", token);
+       //console.log("Loading user info with token:", token);
         // Call the API to get user info
         CallAPI.getUserInfo(token, function(success, result) {
             isLoading = false;
@@ -107,9 +107,9 @@ Item {
         
         CallAPI.setUserInfo(token, null, moodStatus, function(success, result) {
             if (success) {
-                console.log("Mood updated successfully");
+               //console.log("Mood updated successfully");
             } else {
-                console.log("Failed to update mood:", result);
+               //console.log("Failed to update mood:", result);
                 errorMessage = "Failed to update mood";
             }
         });
@@ -439,7 +439,7 @@ Label {
                         Material.background: "#ec4899" // Pink background to match LinkerView button
                         Material.foreground: "white" // White text to match LinkerView button
                         onClicked: {
-                            console.log("Logout clicked")
+                           //console.log("Logout clicked")
                             profileRoot.logoutRequested()
                         }
                     }
