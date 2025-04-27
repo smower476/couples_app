@@ -496,7 +496,7 @@ Item {
     
     // Function to update the responses list
     function updateResponsesList() {
-        console.log("Updating responses list, total responses: " + root.userResponses.length);
+        //console.log("Updating responses list, total responses: " + root.userResponses.length);
         
         // Clear the model
         responsesModel.clear();
@@ -509,7 +509,7 @@ Item {
                     "idea": response.idea,
                     "response": response.response
                 });
-                console.log("Added to list model: " + response.idea + " - " + response.response);
+                //console.log("Added to list model: " + response.idea + " - " + response.response);
             }
         } else if (debugShowExampleResponses) {
             // Add debug responses if no actual responses
@@ -640,9 +640,9 @@ Item {
                 });
                 
                 // Improved logging with JSON.stringify for better object inspection
-                console.log("Added response: " + lastResponse + " for idea: " + root.dateIdeas[root.currentIndex]);
-                console.log("Last added response object: " + JSON.stringify(root.userResponses[root.userResponses.length - 1]));
-                console.log("Total responses: " + root.userResponses.length);
+                //console.log("Added response: " + lastResponse + " for idea: " + root.dateIdeas[root.currentIndex]);
+                //console.log("Last added response object: " + JSON.stringify(root.userResponses[root.userResponses.length - 1]));
+                //console.log("Total responses: " + root.userResponses.length);
             }
             
             // Move to next card
@@ -655,12 +655,12 @@ Item {
                 
                 // Switch to review mode
                 root.reviewMode = true;
-                console.log("Switching to review mode. Total responses: " + root.userResponses.length);
+                //console.log("Switching to review mode. Total responses: " + root.userResponses.length);
                 
                 // Print all response objects for debugging
-                console.log("All responses:");
+                //console.log("All responses:");
                 for (var i = 0; i < root.userResponses.length; i++) {
-                    console.log("Response " + i + ": " + JSON.stringify(root.userResponses[i]));
+                    //console.log("Response " + i + ": " + JSON.stringify(root.userResponses[i]));
                 }
             } else {
                 // Reset card position and appearance

@@ -241,7 +241,7 @@ Item {
             }
             
             onClicked: {
-                console.log("Login clicked:", usernameInput.text);
+                //console.log("Login clicked:", usernameInput.text);
                 loginRegisterRoot.statusMessage = "";
                 if (!isValidLogin(usernameInput.text)) {
                     loginRegisterRoot.statusMessage = "Error: Invalid username format (3-20 chars, a-z, A-Z, 0-9, _)";
@@ -283,7 +283,7 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        console.log("Navigate to Register clicked");
+                        //console.log("Navigate to Register clicked");
                         loginRegisterRoot.statusMessage = "";
                         loginRegisterRoot.navigateToRegisterRequested();
                     }

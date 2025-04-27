@@ -38,7 +38,7 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             text: "Logout"
             onClicked: {
-                console.log("Logout clicked")
+                //console.log("Logout clicked")
                 // Emit signal
                 profileRoot.logoutRequested()
             }

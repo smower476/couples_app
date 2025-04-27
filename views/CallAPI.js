@@ -28,11 +28,11 @@ function getDailyQuizId(token, callback) {
                     const diff = now - lastCompletedTime;
                     const oneDay = 24 * 60 * 60 * 1000;
                     if (diff < oneDay) {
-                        console.log("Daily quiz already done for today.");
+                        //console.log("Daily quiz already done for today.");
                         callback(true, "done");
                         return;
                     } else {
-                        console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
+                        //console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
                     }
                 }
             }
@@ -48,11 +48,11 @@ function getDailyQuizId(token, callback) {
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     if (xhr.status === 200) {
-                        console.log("Unanswered quizzes received:", xhr.responseText);
+                        //console.log("Unanswered quizzes received:", xhr.responseText);
                         try {
                             // Wrap number fields in quotes before parsing
                             const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
-                            console.log("Raw quiz data:", responseText);
+                            //console.log("Raw quiz data:", responseText);
                             const quizzes = JSON.parse(responseText);
 
                             // Sort quizzes by ID
@@ -63,7 +63,7 @@ function getDailyQuizId(token, callback) {
                                     return a.id - b.id;
                                 }
                             });
-                            console.log("Sorted quiz data:", JSON.stringify(quizzes, null, 2));
+                            //console.log("Sorted quiz data:", JSON.stringify(quizzes, null, 2));
 
                             // Sort quizzes by created_at in ascending order (oldest first)
                             quizzes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -71,14 +71,14 @@ function getDailyQuizId(token, callback) {
                             // Select the oldest quiz (the first one after sorting)
                             const quizId = quizzes[0].id;
 
-                            console.log("Selected quiz ID:", quizId);
+                            //console.log("Selected quiz ID:", quizId);
                             callback(true, quizId); // Success, return quiz ID
                         } catch (e) {
-                            console.error("Error processing quizzes:", e);
+                            //console.error("Error processing quizzes:", e);
                             callback(false, "Failed to process quizzes: " + e.message);
                         }
                     } else {
-                        console.error("Get unanswered quizzes error:", xhr.status, xhr.responseText);
+                        //console.error("Get unanswered quizzes error:", xhr.status, xhr.responseText);
                         callback(false, "Failed to get unanswered quizzes: " + xhr.responseText); // Failure
                     }
                 }
@@ -86,7 +86,7 @@ function getDailyQuizId(token, callback) {
 
             xhr.send(params);
         } else {
-            console.error("Failed to get answered quizzes:", answeredQuizzes);
+            //console.error("Failed to get answered quizzes:", answeredQuizzes);
             callback(false, "Failed to get answered quizzes.");
         }
     });
@@ -103,7 +103,7 @@ function getAnsweredQuizzes(token, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Answered quizzes received:", xhr.responseText);
+                //console.log("Answered quizzes received:", xhr.responseText);
                 try {
                     // Wrap number fields in quotes before parsing
                     const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
@@ -117,11 +117,11 @@ function getAnsweredQuizzes(token, callback) {
                         callback(true, []);
                     }
                 } catch (e) {
-                    console.error("Error processing answered quizzes:", e);
+                    //console.error("Error processing answered quizzes:", e);
                     callback(false, "Failed to process answered quizzes: " + e.message);
                 }
             } else {
-                console.error("Get answered quizzes error:", xhr.status, xhr.responseText);
+                //console.error("Get answered quizzes error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to get answered quizzes: " + xhr.responseText);
             }
         }
@@ -134,7 +134,7 @@ function getQuizContent(token, quizId, callback) {
     var xhr = new XMLHttpRequest();
     var url = API_BASE_URL + "/get-quiz-content";
     var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId);
-    console.log(params);
+    //console.log(params);
 
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -142,14 +142,14 @@ function getQuizContent(token, quizId, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Quiz content received:", xhr.responseText);
+                //console.log("Quiz content received:", xhr.responseText);
                 // Wrap number fields in quotes before parsing
                 const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                 const quizContent = JSON.parse(responseText);
-                console.log("Quiz content (pretty):", JSON.stringify(quizContent, null, 2));
+                //console.log("Quiz content (pretty):", JSON.stringify(quizContent, null, 2));
                 callback(true, quizContent); // Success, return quiz content
             } else {
-                console.error("Get quiz content error:", xhr.status, xhr.responseText);
+                //console.error("Get quiz content error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to get quiz content: " + xhr.responseText); // Failure
             }
         }
@@ -183,7 +183,7 @@ function getQuizzQuestionAndAnswer(callback, apiKey) {
                     callback(question, answers); // Return both after all requests finish
                 });
             } else {
-                console.log("Error:", xhr.status, xhr.responseText);
+                //console.log("Error:", xhr.status, xhr.responseText);
                 callback("Not able to load", []);
             }
         }
@@ -205,12 +205,12 @@ function registerUser(username, password, callback) {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             // Accept 200 OK or 201 Created as success for registration
             if (xhr.status === 200 || xhr.status === 201) {
-                console.log("Registration successful:", xhr.status, xhr.responseText);
+                //console.log("Registration successful:", xhr.status, xhr.responseText);
                 // Wrap number fields in quotes before parsing (assuming response might contain user ID or similar)
                 const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                 callback(true, responseText); // Success
             } else {
-                console.error("Registration error:", xhr.status, xhr.responseText);
+                //console.error("Registration error:", xhr.status, xhr.responseText);
                 callback(false, "Registration failed: " + xhr.responseText); // Failure
             }
         }
@@ -230,11 +230,11 @@ function loginUser(username, password, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Login successful. JWT:", xhr.responseText);
+                //console.log("Login successful. JWT:", xhr.responseText);
                 // Assuming the response text is the JWT token directly, no parsing needed here
                 callback(true, xhr.responseText); // Success, return JWT
             } else {
-                console.error("Login error:", xhr.status, xhr.responseText);
+                //console.error("Login error:", xhr.status, xhr.responseText);
                 callback(false, "Login failed: " + xhr.responseText); // Failure
             }
         }
@@ -253,27 +253,27 @@ function getLinkCode(token, callback) {
     xhr.onreadystatechange = function() {
             if (xhr.status === 0) {
                 if (!xhr.responseText) {
-                    console.error("Get link code error: Network error, CORS issue, or server is unreachable.");
+                    //console.error("Get link code error: Network error, CORS issue, or server is unreachable.");
                     callback(false, { status: 0, message: "Network error, CORS issue, or server is unreachable. Check server logs and CORS headers." });
                 } else {
                     // Sometimes status 0 but responseText is present (rare)
                     callback(false, { status: 0, message: "Unexpected status 0 with response: " + xhr.responseText });
                 }
             } else if (xhr.status === 200) {
-                console.log("Link code received:", xhr.responseText);
+                //console.log("Link code received:", xhr.responseText);
                 callback(true, xhr.responseText); // Success, return link code
             } else if (xhr.status === 409) {
-                console.error("Get link code error: user has already been linked");
+                //console.error("Get link code error: user has already been linked");
                 callback(false, { status: 409, message: "User has already been linked." });
             } else {
-                console.error("Get link code error:", xhr.status, xhr.responseText);
+                //console.error("Get link code error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to get link code: " + xhr.responseText);
             }
     };
 
     xhr.onerror = function(e) {
         // This is called for network errors, CORS, etc.
-        console.error("getLinkCode: onerror triggered. Most likely a network or CORS error.", e);
+        //console.error("getLinkCode: onerror triggered. Most likely a network or CORS error.", e);
         callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered). Check server and browser console for CORS errors." });
     };
 
@@ -291,12 +291,12 @@ function linkUsers(token, linkCode, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Users linked successfully:", xhr.responseText);
+                //console.log("Users linked successfully:", xhr.responseText);
                 // Wrap number fields in quotes before parsing (assuming response might contain linked user IDs or similar)
                 const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                 callback(true, responseText); // Success
             } else {
-                console.error("Link users error:", xhr.status, xhr.responseText);
+                //console.error("Link users error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to link users: " + xhr.responseText); // Failure
             }
         }
@@ -324,7 +324,7 @@ function answerQuiz(token, quizId, answers, callback) {
                 binaryString += "11";
                 break;
             default:
-                console.error("Invalid answer value:", answer);
+                //console.error("Invalid answer value:", answer);
                 callback(false, "Invalid answer value provided.");
                 return;
         }
@@ -332,8 +332,8 @@ function answerQuiz(token, quizId, answers, callback) {
 
     // Convert binary string to base 10 integer
     const base10Answer = parseInt(binaryString, 2);
-    console.log("Binary answer string:", binaryString);
-    console.log("Base 10 answer:", base10Answer);
+    //console.log("Binary answer string:", binaryString);
+    //console.log("Base 10 answer:", base10Answer);
 
     var xhr = new XMLHttpRequest();
     var url = API_BASE_URL + "/answer-quiz";
@@ -345,15 +345,52 @@ function answerQuiz(token, quizId, answers, callback) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                console.log("Quiz answered successfully:", xhr.responseText);
+                //console.log("Quiz answered successfully:", xhr.responseText);
                 // Wrap number fields in quotes before parsing (assuming response might contain quiz result ID or similar)
                 const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
                 callback(true, responseText); // Success
             } else {
-                console.error("Answer quiz error:", xhr.status, xhr.responseText);
+                //console.error("Answer quiz error:", xhr.status, xhr.responseText);
                 callback(false, "Failed to answer quiz: " + xhr.responseText); // Failure
             }
         }
+    };
+
+    xhr.send(params);
+}
+
+function getPartnerInfo(token, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/set-partner-info";
+    var params = "token=" + encodeURIComponent(token);
+
+    xhr.open("POST", url, true); // Changed to POST method based on working shell script
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    console.log("getPartnerInfo params:", params);
+    console.log("getPartnerInfo method: POST"); // Debug log for method
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                console.log("Partner info received:", xhr.responseText);
+                try {
+                    // Assuming partner info is JSON, parse it
+                    const partnerInfo = JSON.parse(xhr.responseText);
+                    callback(true, partnerInfo); // Success, return partner info
+                } catch (e) {
+                    //console.error("Error parsing partner info:", e);
+                    callback(false, "Failed to parse partner info: " + e.message);
+                }
+            } else {
+                //console.error("Get partner info error:", xhr.status, xhr.responseText);
+                // Handle specific error statuses if needed, otherwise return generic failure
+                callback(false, { status: xhr.status, message: "Failed to get partner info: " + xhr.responseText }); // Failure
+            }
+        }
+    };
+
+    xhr.onerror = function(e) {
+        //console.error("getPartnerInfo: onerror triggered. Network or CORS error.", e);
+        callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered)." });
     };
 
     xhr.send(params);

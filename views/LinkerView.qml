@@ -14,6 +14,7 @@ Item {
     property string jwtToken: "" // Add property to hold the JWT token
     property string userLinkCode: "Loading..." // Property to hold the fetched link code
     property string errorMessage: "" // Property to hold error messages
+    property string partnerName: "" // Property to hold the partner's name
 
     // Signals
     signal linkPartner()
@@ -21,33 +22,55 @@ Item {
     // Function to fetch the link code
     function fetchLinkCode() {
         if (jwtToken !== "") {
-            console.log("Fetching link code with token:", jwtToken)
+            //console.log("Fetching link code with token:", jwtToken)
             CallAPI.getLinkCode(jwtToken, function(success, result) {
                 if (success) {
-                    console.log("Link code received:", result)
+                    //console.log("Link code received:", result)
                     userLinkCode = result;
                 } else {
                     // Handle 409 (already connected) with new error object
                     if (result && typeof result === "object" && result.status === 409) {
-                        console.log("Already connected to a partner (409). Showing connected screen.");
-                        partnerLinked = true;
-                        errorMessage = "";
+                        //console.log("409 error received in fetchLinkCode. Attempting to fetch partner info."); // Debug statement
+                        CallAPI.getPartnerInfo(jwtToken, function(partnerSuccess, partnerResult) {
+                            if (partnerSuccess && partnerResult && partnerResult.username) {
+                                partnerName = partnerResult.username;
+                                partnerLinked = true;
+                                errorMessage = "";
+                            } else {
+                                //console.error("Failed to get partner info after 409:", partnerResult);
+                                partnerLinked = true; // Still show linked screen even if name fetch fails
+                                partnerName = "Partner"; // Default name
+                                errorMessage = "Could not fetch partner name.";
+                            }
+                        });
                     } else if (typeof result === "string" && result.indexOf("409") !== -1) {
                         // fallback for string error
-                        console.log("Already connected to a partner (409 string). Showing connected screen.");
-                        partnerLinked = true;
-                        errorMessage = "";
-                    } else {
-                        console.error("Failed to get link code:", result);
-                        userLinkCode = "Error"; // Display error in UI
-                    }
-                }
-            });
-        } else {
-            console.log("JWT token not available yet for fetching link code.");
-            userLinkCode = "Login Required"; // Indicate user needs to be logged in
-        }
-    }
+                        //console.log("409 error (string fallback) received in fetchLinkCode. Attempting to fetch partner info."); // Debug statement
+                         CallAPI.getPartnerInfo(jwtToken, function(partnerSuccess, partnerResult) {
+                            if (partnerSuccess && partnerResult && partnerResult.username) {
+                                partnerName = partnerResult.username;
+                                partnerLinked = true;
+                                errorMessage = "";
+                            } else {
+                                //console.error("Failed to get partner info after 409 string:", partnerResult);
+                                partnerLinked = true; // Still show linked screen even if name fetch fails
+                                partnerName = "Partner"; // Default name
+                                errorMessage = "Could not fetch partner name.";
+                             }
+                         });
+                     } else {
+                         //console.error("Failed to get link code:", result);
+                         userLinkCode = "Error"; // Display error in UI
+                         errorMessage = "Failed to get link code: " + (result && result.message ? result.message : result);
+                     }
+                 }
+             });
+         } else {
+             //console.log("JWT token not available yet for fetching link code.");
+             userLinkCode = "Login Required"; // Indicate user needs to be logged in
+             errorMessage = "Please log in first to get your invite code.";
+         }
+     }
 
     // Fetch the code when the component is ready AND token is available
     Component.onCompleted: {
@@ -162,18 +185,57 @@ Item {
                         onClicked: {
                             var codeToLink = root.inviteCode.trim();
                             if (codeToLink !== "" && root.jwtToken !== "") {
-                                console.log("Attempting to link with code:", codeToLink);
+                                //console.log("Attempting to link with code:", codeToLink);
                                 CallAPI.linkUsers(root.jwtToken, codeToLink, function(success, result) {
                                     if (success) {
-                                        console.log("Successfully linked partners:", result);
-                                        root.linkPartner(); // Emit signal on successful API call
+                                        //console.log("Successfully linked partners:", result);
+                                        CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
+                                            if (partnerSuccess && partnerResult && partnerResult.username) {
+                                                root.partnerName = partnerResult.username;
+                                                root.partnerLinked = true;
+                                                root.errorMessage = "";
+                                                root.linkPartner(); // Emit signal after getting partner name
+                                            } else {
+                                                //console.error("Failed to get partner info after linking:", partnerResult);
+                                                root.partnerLinked = true; // Still show linked screen even if name fetch fails
+                                                root.partnerName = "Partner"; // Default name
+                                                root.errorMessage = "Successfully linked, but could not fetch partner name.";
+                                                root.linkPartner(); // Emit signal even if name fetch fails
+                                            }
+                                        });
                                     } else {
-                                        console.error("Failed to link partners:", result);
+                                        //console.error("Failed to link partners:", result);
                                         // Handle 409 error (already linked)
                                         if (result && typeof result === "object" && result.status === 409) {
+                                            console.log("409 error received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
+                                            // Optionally fetch partner info here too if linking fails due to already linked
+                                            CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
+                                                if (partnerSuccess && partnerResult && partnerResult.username) {
+                                                    root.partnerName = partnerResult.username;
+                                                    root.partnerLinked = true;
+                                                    root.errorMessage = "You are already linked with " + root.partnerName + ".";
+                                                } else {
+                                                    root.partnerLinked = true;
+                                                    root.partnerName = "Partner";
+                                                    root.errorMessage = "You are already linked with a partner, but could not fetch their name.";
+                                                }
+                                            });
                                         } else if (typeof result === "string" && result.indexOf("409") !== -1) {
+                                            console.log("409 error (string fallback) received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
+                                            // Optionally fetch partner info here too if linking fails due to already linked (string fallback)
+                                            CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
+                                                if (partnerSuccess && partnerResult && partnerResult.username) {
+                                                    root.partnerName = partnerResult.username;
+                                                    root.partnerLinked = true;
+                                                    root.errorMessage = "You are already linked with " + root.partnerName + ".";
+                                                } else {
+                                                    root.partnerLinked = true;
+                                                    root.partnerName = "Partner";
+                                                    root.errorMessage = "You are already linked with a partner, but could not fetch their name.";
+                                                }
+                                            });
                                         } else {
                                             // Show error message to user in the UI
                                             root.errorMessage = "Failed to link: " + (result && result.message ? result.message : result);
@@ -181,11 +243,11 @@ Item {
                                     }
                                 });
                             } else if (root.jwtToken === "") {
-                                console.error("Cannot link: User not logged in (no JWT token).");
+                                //console.error("Cannot link: User not logged in (no JWT token).");
                                 // Show message: "Please log in first."
                                 root.errorMessage = "Please log in first to link with your partner.";
                             } else {
-                                console.log("Cannot link: Invite code field is empty.");
+                                //console.log("Cannot link: Invite code field is empty.");
                                 // Show message: "Please enter partner's code."
                                 root.errorMessage = "Please enter your partner's invite code.";
                             }
@@ -248,7 +310,8 @@ Item {
                 }
                 
                 Text {
-                    text: "Connected with Sarah"
+                    id: connectedText // Added ID for easier reference
+                    text: "Connected with " + root.partnerName // Use the partnerName property
                     font.pixelSize: 24
                     font.bold: true
                     color: "white"

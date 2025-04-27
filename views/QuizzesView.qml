@@ -37,7 +37,7 @@ Item {
             if (root.jwtToken && !root.quizCompleted) {
                 fetchDailyQuiz();
             } else {
-                ////console.log("QuizzesView: jwtToken cleared or quiz already completed.");
+                //console.log("QuizzesView: jwtToken cleared or quiz already completed.");
             }
         }
     }
@@ -64,7 +64,7 @@ Item {
                 // Initialize currentQuizAnswers array with placeholders
                 root.currentQuizAnswers = new Array(transformedQuiz.questions.length).fill(0);
             } else {
-                console.error("Failed to process quiz content or quiz_content is empty:", quizContent);
+                //console.error("Failed to process quiz content or quiz_content is empty:", quizContent);
                 root.quizFetched(null);
             }
         });
@@ -86,18 +86,18 @@ Item {
                         //console.log("Quiz content:", quizContent);
                         callback(quizContent, quizId);
                     } else {
-                        console.error("Failed to get quiz content:", quizContent);
+                        //console.error("Failed to get quiz content:", quizContent);
                     }
                 });
             } else {
-                console.error("Failed to get daily quiz ID:", quizId);
+                //console.error("Failed to get daily quiz ID:", quizId);
             }
         });
     }
 
     function fetchCompletedQuizResults() {
         if (!root.jwtToken) {
-            console.error("Cannot fetch completed quiz results: JWT token is missing.");
+            //console.error("Cannot fetch completed quiz results: JWT token is missing.");
             return;
         }
         CallAPI.getAnsweredQuizzes(root.jwtToken, function(success, answeredQuizzes) {
@@ -128,12 +128,16 @@ Item {
                         const questionCount = quizContent.quiz_content.length;
                         let selfAnswers = [];
                         let partnerAnswers = [];
-                        console.log("DEBUG: self_answer (int):", typeof(lastAnsweredQuiz.self_answer));
+                        //console.log("DEBUG: self_answer (int):", typeof(lastAnsweredQuiz.self_answer));
                         selfAnswers = decodeAnswers(lastAnsweredQuiz.self_answer, questionCount);
-                        console.log("DEBUG: self_answer (int):", typeof(selfAnswers));
+                        //console.log("DEBUG: self_answer (int):", typeof(selfAnswers));
         
-                        console.log("DEBUG: partner_answer (int):", lastAnsweredQuiz.partner_answer);
-                        partnerAnswers = decodeAnswers(lastAnsweredQuiz.partner_answer, questionCount);
+                        //console.log("DEBUG: partner_answer (int):", lastAnsweredQuiz.partner_answer);
+                        // If partner_answer is null or "null", fill with "Partner didn't answer"
+                        let partnerDidntAnswer = lastAnsweredQuiz.partner_answer === null || lastAnsweredQuiz.partner_answer === "null";
+                        if (!partnerDidntAnswer) {
+                            partnerAnswers = decodeAnswers(lastAnsweredQuiz.partner_answer, questionCount);
+                        }
 
                         const transformedResults = {
                             id: completedQuizId,
@@ -141,13 +145,15 @@ Item {
                             questions: quizContent.quiz_content.map((question, index) => {
                                 const questionText = question.content_data;
                                 const selfIdx = (selfAnswers.length > index) ? selfAnswers[index] - 1 : -1;
-                                const partnerIdx = (partnerAnswers.length > index) ? partnerAnswers[index] - 1 : -1;
+                                const partnerIdx = (!partnerDidntAnswer && partnerAnswers.length > index) ? partnerAnswers[index] - 1 : -1;
                                 const selfText = (selfIdx >= 0 && question.answers[selfIdx])
                                     ? question.answers[selfIdx].answer_content
                                     : "No answer";
-                                const partnerText = (partnerIdx >= 0 && question.answers[partnerIdx])
-                                    ? question.answers[partnerIdx].answer_content
-                                    : "No answer";
+                                const partnerText = partnerDidntAnswer
+                                    ? "Partner didn't answer"
+                                    : ((partnerIdx >= 0 && question.answers[partnerIdx])
+                                        ? question.answers[partnerIdx].answer_content
+                                        : "No answer");
                                 return {
                                     question: questionText,
                                     self: selfText,
@@ -158,12 +164,12 @@ Item {
                         root.completedQuizData = transformedResults;
                         //console.log("Fetched and transformed completed quiz data:", JSON.stringify(root.completedQuizData, null, 2));
                     } else {
-                        console.error("Failed to fetch content for completed quiz:", quizContent);
+                        //console.error("Failed to fetch content for completed quiz:", quizContent);
                         root.completedQuizData = null;
                     }
                 });
             } else {
-                console.error("Failed to fetch completed quizzes or no answered quizzes found:", answeredQuizzes);
+                //console.error("Failed to fetch completed quizzes or no answered quizzes found:", answeredQuizzes);
                 root.completedQuizData = null;
             }
         });
@@ -359,7 +365,7 @@ Item {
                                                 fetchCompletedQuizResults();
                                                 root.quizCompleted = true; // Show completion view
                                             } else {
-                                                console.error("Failed to submit quiz:", response);
+                                                //console.error("Failed to submit quiz:", response);
                                                 // Handle submission failure (e.g., show an error message)
                                             }
                                         });

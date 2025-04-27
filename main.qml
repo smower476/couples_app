@@ -96,7 +96,7 @@ ApplicationWindow {
 
             // Handle the signal emitted by QuizzesView when data is fetched
             onQuizFetched: function(fetchedQuizData) {
-                console.log("main.qml: Quiz fetched signal received.");
+                //console.log("main.qml: Quiz fetched signal received.");
                 if (fetchedQuizData) {
                     window.currentQuiz = fetchedQuizData;
                     window.currentQuestionIndex = 0; // Reset index for new quiz
@@ -112,10 +112,10 @@ ApplicationWindow {
                             questions: [] // Initialize empty questions array
                         });
                         window.quizResponses = newResponses; // Update the main state
-                        console.log("main.qml: Added new response entry for quiz:", fetchedQuizData.id);
+                        //console.log("main.qml: Added new response entry for quiz:", fetchedQuizData.id);
                     }
                 } else {
-                    console.error("main.qml: Quiz fetch failed.");
+                    //console.error("main.qml: Quiz fetch failed.");
                     window.currentQuiz = null; // Clear quiz if fetch failed
                     window.quizCompletedState = false; // Reset completion state
                     window.lastCompletedQuizData = null;
@@ -124,10 +124,10 @@ ApplicationWindow {
 
             // Handle the signal emitted by QuizzesView when an answer is selected
             onQuizResponse: function (questionText, selectedAnswer) {
-                console.log("main.qml: Quiz response received:", questionText, selectedAnswer);
+                //console.log("main.qml: Quiz response received:", questionText, selectedAnswer);
                 // Ensure there's a current quiz loaded
                 if (!window.currentQuiz) {
-                    console.error("main.qml: Received quiz response but no current quiz is set.");
+                    //console.error("main.qml: Received quiz response but no current quiz is set.");
                     return;
                 }
 
@@ -141,7 +141,7 @@ ApplicationWindow {
 
                 // This should exist because onQuizFetched creates it, but check just in case
                 if (!quizResponseObj) {
-                     console.error("main.qml: Response object not found for quiz ID:", quizId);
+                     //console.error("main.qml: Response object not found for quiz ID:", quizId);
                      // Optionally create it here if needed, though it indicates a logic error elsewhere
                      quizResponseObj = { id: quizId, title: window.currentQuiz.title, questions: [] };
                      responsesCopy.push(quizResponseObj);
@@ -158,15 +158,15 @@ ApplicationWindow {
 
                 // Update the main state property - this triggers UI updates in QuizzesView
                 window.quizResponses = responsesCopy;
-                console.log("main.qml: Updated quizResponses:", JSON.stringify(window.quizResponses));
+                //console.log("main.qml: Updated quizResponses:", JSON.stringify(window.quizResponses));
 
 
                 // --- Move to next question or finish quiz ---
                 if (questionIdx < window.currentQuiz.questions.length - 1) {
                     window.currentQuestionIndex++; // Go to next question
-                    console.log("main.qml: Moving to next question index:", window.currentQuestionIndex);
+                    //console.log("main.qml: Moving to next question index:", window.currentQuestionIndex);
                 } else {
-                    console.log("main.qml: Quiz finished!");
+                    //console.log("main.qml: Quiz finished!");
                     // Quiz finished, prepare data and set completion state
                     var finishedQuizId = window.currentQuiz.id;
                     var finalResponses = window.quizResponses.find(r => r.id === finishedQuizId);
@@ -178,13 +178,13 @@ ApplicationWindow {
 
                     window.currentQuiz = null; // Clear the active quiz
                     window.currentQuestionIndex = 0; // Reset index
-                    console.log("main.qml: Quiz completed. State set with data:", JSON.stringify(window.lastCompletedQuizData));
+                    //console.log("main.qml: Quiz completed. State set with data:", JSON.stringify(window.lastCompletedQuizData));
                 }
             }
 
             // --- Handle signal from QuizzesView popup ---
             onCompletionAcknowledged: () => {
-                console.log("main.qml: Quiz completion acknowledged.");
+                //console.log("main.qml: Quiz completion acknowledged.");
                 window.quizCompletedState = false; // Reset completion state
                 window.lastCompletedQuizData = null;
                 // Optionally navigate away, e.g., back to hub
@@ -249,20 +249,20 @@ ApplicationWindow {
             // Connect to signals from LoginRegisterView
             onLoginAttemptFinished: (success, tokenOrError, username) => { // Add username parameter
                 if (success) {
-                    console.log("Login finished successfully in main.qml");
+                    //console.log("Login finished successfully in main.qml");
                     window.jwtToken = tokenOrError; // Store the JWT
                     window.currentUsername = username; // Use username from signal
                     window.isLoggedIn = true;
                     window.loginSuccessful(); // Emit signal *after* token and status are set
                     window.currentView = "hub"; // Go back to hub after login
                 } else {
-                    console.error("Login finished with error in main.qml:", tokenOrError);
+                    //console.error("Login finished with error in main.qml:", tokenOrError);
                     // Error is shown in LoginRegisterView
                 }
             }
 
             onNavigateToRegisterRequested: () => {
-                console.log("Navigate to Register requested");
+                //console.log("Navigate to Register requested");
                 window.currentView = "register"; // Change view to register page
             }
         }
@@ -274,11 +274,22 @@ ApplicationWindow {
 
             // Connect to signal from ProfileView
             onLogoutRequested: () => {
-                console.log("Logout requested");
+                //console.log("Logout requested");
                 window.jwtToken = ""; // Clear the token
                 window.currentUsername = ""; // Clear username
                 window.isLoggedIn = false;
                 window.currentView = "hub"; // Go back to hub after logout
+
+                // Reset all state properties to their initial values
+                window.quizCompletedState = false;
+                window.lastCompletedQuizData = null;
+                window.dateIdeasIndex = 0;
+                window.partnerLinked = false;
+                window.quizResponses = [];
+                window.dailyResponses = [];
+                window.dateIdeasHistory = [];
+                window.currentQuiz = null;
+                window.currentQuestionIndex = 0;
             }
         }
 
@@ -288,7 +299,7 @@ ApplicationWindow {
 
             onRegistrationComplete: (success, result) => {
                 if (success) {
-                    console.log("Registration finished successfully in main.qml");
+                    //console.log("Registration finished successfully in main.qml");
                     // Result is expected to be JSON string: {token: "...", username: "..."}
                     try {
                         var data = JSON.parse(result);
@@ -297,18 +308,18 @@ ApplicationWindow {
                         window.isLoggedIn = true;
                         window.currentView = "hub"; // Go to hub after successful registration
                     } catch (e) {
-                        console.error("Error parsing registration result:", e, result);
+                        //console.error("Error parsing registration result:", e, result);
                         // Fallback or show error? For now, go to login
                         window.currentView = "login";
                     }
                 } else {
-                    console.error("Registration finished with error in main.qml:", result);
+                    //console.error("Registration finished with error in main.qml:", result);
                     // Error is shown in RegisterView, stay on register page
                 }
             }
 
             onBackToLoginRequested: () => {
-                console.log("Back to Login requested");
+                //console.log("Back to Login requested");
                 window.currentView = "login"; // Go back to login page
             }
         }
