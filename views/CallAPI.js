@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://129.158.234.85:8080"; // Define base URL
+const API_BASE_URL = "http://129.158.234.85:8081"; // Define base URL
 
 function wrapNumberFieldsInQuotes(responseText) {
     // This regex finds a quoted key, followed by optional whitespace, a colon,
@@ -12,9 +12,7 @@ function getDailyQuizId(token, callback) {
     getAnsweredQuizzes(token, function(success, answeredQuizzes) {
         if (success) {
             if (answeredQuizzes.length > 0) {
-                // Get the most recent completed quiz (first element after sorting descending)
                 const lastCompletedQuiz = answeredQuizzes[0];
-                // Defensive: check for user_answer and answered_at, else fallback to created_at
                 let lastCompletedTime = null;
                 const timestamp = lastCompletedQuiz.user_answer?.answered_at || lastCompletedQuiz.self_answered_at || lastCompletedQuiz.created_at;
                 if (timestamp) {
@@ -25,16 +23,13 @@ function getDailyQuizId(token, callback) {
                     const diff = now - lastCompletedTime;
                     const oneDay = 24 * 60 * 60 * 1000;
                     if (diff < oneDay) {
-                        //console.log("Daily quiz already done for today.");
                         callback(true, "done");
                         return;
                     } else {
-                        //console.log("Daily quiz not done for today. Diff:", diff, "oneDay:", oneDay);
                     }
                 }
             }
 
-            // If not done for today, proceed with getting an unanswered quiz
             var xhr = new XMLHttpRequest();
             var url = API_BASE_URL + "/get-unanswered-quizzes-for-pair";
             var params = "token=" + encodeURIComponent(token);
@@ -45,14 +40,10 @@ function getDailyQuizId(token, callback) {
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     if (xhr.status === 200) {
-                        //console.log("Unanswered quizzes received:", xhr.responseText);
                         try {
-                            // Wrap number fields in quotes before parsing
                             const responseText = wrapNumberFieldsInQuotes(xhr.responseText);
-                            //console.log("Raw quiz data:", responseText);
                             const quizzes = JSON.parse(responseText);
 
-                            // Sort quizzes by ID
                             quizzes.sort((a, b) => {
                                 if (typeof a.id === 'string' && typeof b.id === 'string') {
                                     return a.id.localeCompare(b.id);
@@ -60,22 +51,19 @@ function getDailyQuizId(token, callback) {
                                     return a.id - b.id;
                                 }
                             });
-                            //console.log("Sorted quiz data:", JSON.stringify(quizzes, null, 2));
 
-                            // Sort quizzes by created_at in ascending order (oldest first)
                             quizzes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-                            // Select the oldest quiz (the first one after sorting)
-                            const quizId = quizzes[0].id;
-
-                            //console.log("Selected quiz ID:", quizId);
-                            callback(true, quizId); // Success, return quiz ID
+                            if (quizzes.length > 0) {
+                                const quizId = quizzes[0].id;
+                                callback(true, quizId);
+                            } else {
+                                callback(false, "No unanswered quizzes available.");
+                            }
                         } catch (e) {
-                            //console.error("Error processing quizzes:", e);
                             callback(false, "Failed to process quizzes: " + e.message);
                         }
                     } else {
-                        //console.error("Get unanswered quizzes error:", xhr.status, xhr.responseText);
                         callback(false, "Failed to get unanswered quizzes: " + xhr.responseText); // Failure
                     }
                 }
@@ -83,7 +71,6 @@ function getDailyQuizId(token, callback) {
 
             xhr.send(params);
         } else {
-            //console.error("Failed to get answered quizzes:", answeredQuizzes);
             callback(false, "Failed to get answered quizzes.");
         }
     });
