@@ -8,26 +8,13 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    
-    // Set application info
     app.setApplicationName("Couples App");
     app.setOrganizationName("Couples App");
-    
-    // Set Material style for consistent look on all platforms
     QQuickStyle::setStyle("Material");
-    
-    // Set surface format for better rendering
     QSurfaceFormat format;
     format.setSamples(8);
     QSurfaceFormat::setDefaultFormat(format);
-    
     QQmlApplicationEngine engine;
-    
-    // Debug output to check the current working directory
-    qDebug() << "Current working directory:" << QDir::currentPath();
-    qDebug() << "Application directory:" << QCoreApplication::applicationDirPath();
-    
-    // Try to load from resources first
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
