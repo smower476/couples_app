@@ -389,10 +389,6 @@ Item {
                         registerRoot.statusMessage = "Error: Passwords do not match";
                         return;
                     }
-                    if (dobInput.text !== "" && dobInput.text !== "__-__-____" && !isValidDateOfBirth(dobInput.text)) {
-                        registerRoot.statusMessage = "Error: Invalid Date of Birth (must be MM-DD-YYYY and in the past)";
-                        return;
-                    }
 
                     registerRoot.statusMessage = "Registering...";
                     CallAPI.registerUser(usernameInput.text, passwordInput.text, (regSuccess, regMessage) => {

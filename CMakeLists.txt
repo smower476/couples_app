@@ -20,6 +20,10 @@ set(QML_FILES
     components/BottomNavigation.qml
     views/HubView.qml
     views/QuizzesView.qml
+    views/quizViews/QuizzesViewLoading.qml
+    views/quizViews/QuizzesViewCurrent.qml
+    views/quizViews/QuizzesViewCompleted.qml
+    views/quizViews/QuizzesViewNoAvailable.qml
     views/LinkerView.qml
     views/ProfileView.qml
     views/LoginRegisterView.qml
