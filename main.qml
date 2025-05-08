@@ -2,6 +2,8 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Window 2.15
 import QtQuick.Layouts 1.15
+import Qt.labs.settings 1.0
+import "views/CallAPI.js" as CallAPI
 
 import "components"
 import "views"
@@ -13,11 +15,15 @@ ApplicationWindow {
     visible: true
     title: "Couples App"
     color: "#121212"
-
+    Settings {
+        id: appSettings
+        property string savedJwtToken: ""
+        property string savedUsername: ""
+    }
     property string currentView: "hub"
-    property bool isLoggedIn: false
-    property string jwtToken: ""
-    property string currentUsername: ""
+    property bool isLoggedIn: jwtToken !== ""
+    property string jwtToken: appSettings.savedJwtToken
+    property string currentUsername: appSettings.savedUsername
 
     signal loginSuccessful()
 
@@ -139,9 +145,11 @@ ApplicationWindow {
 
             onLoginAttemptFinished: (success, tokenOrError, username) => {
                 if (success) {
-                    window.jwtToken = tokenOrError;
-                    window.currentUsername = username;
-                    window.isLoggedIn = true;
+                    // window.jwtToken = tokenOrError;
+                    // window.currentUsername = username;
+                    // window.isLoggedIn = true;
+                    appSettings.savedJwtToken = tokenOrError;
+                    appSettings.savedUsername = username;
                     window.loginSuccessful();
                     window.currentView = "hub";
                 } else {
@@ -158,9 +166,9 @@ ApplicationWindow {
             token: window.jwtToken
 
             onLogoutRequested: () => {
-                window.jwtToken = "";
-                window.currentUsername = "";
-                window.isLoggedIn = false;
+                appSettings.savedJwtToken = "";
+                appSettings.savedUsername = "";
+                // window.isLoggedIn = false;
                 window.currentView = "hub";
                 window.quizCompletedState = false;
                 window.lastCompletedQuizData = null;
@@ -181,9 +189,9 @@ ApplicationWindow {
                 if (success) {
                     try {
                         var data = JSON.parse(result);
-                        window.jwtToken = data.token;
-                        window.currentUsername = data.username;
-                        window.isLoggedIn = true;
+                        appSettings.savedJwtToken = data.token;
+                        appSettings.savedUsername = data.username;
+                        // window.isLoggedIn = true;
                         window.currentView = "hub";
                     } catch (e) {
                         window.currentView = "login";
@@ -232,4 +240,20 @@ ApplicationWindow {
         quizHistoryDetailView.rawAnsweredQuizData = quizData;
         window.currentView = "quizHistoryDetail";
     }
+
+    Component.onCompleted: {
+    if (appSettings.savedJwtToken !== "") {
+        CallAPI.getUserInfo(appSettings.savedJwtToken, function(success, userInfo) {
+            if (!success) {
+                appSettings.savedJwtToken = "";
+                appSettings.savedUsername = "";
+                window.currentView = "hub";
+            } else {
+                if (userInfo && userInfo.username) {
+                    appSettings.savedUsername = userInfo.username;
+                }
+            }
+        });
+    }
+}
 }

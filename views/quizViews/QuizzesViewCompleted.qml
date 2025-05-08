@@ -101,7 +101,7 @@ Item {
                 const partnerAnsValue = (!partnerDidntAnswer && partnerAnswers.length > index) ? partnerAnswers[index] : 0;
                 const partnerIdx = partnerAnsValue > 0 ? partnerAnsValue - 1 : -1;
                 const partnerText = partnerDidntAnswer
-                    ? "Partner didn\\'t answer"
+                    ? "Partner didn't answer"
                     : ((partnerIdx >= 0 && question.answers[partnerIdx])
                         ? question.answers[partnerIdx].answer_content
                         : "No answer");
@@ -155,6 +155,7 @@ Item {
             partnerDidntAnswer: partnerDidntAnswer
         };
         root.processedResults = transformed;
+        console.log("QuizzesViewCompleted: Processed results:", JSON.stringify(transformed, null, 2));
     }
 
     // When completedQuizData changes, re-process it
@@ -214,13 +215,11 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    // Use processedResults for display
-                    text: root.processedResults ? root.processedResults.title : "Quiz Results"
+                    text: root.processedResults.title
                     font.pixelSize: 20
                     font.bold: true
-                    color: "white"
+                    color: "#d1d5db"
                     horizontalAlignment: Text.AlignHCenter
-                    visible: root.processedResults && root.processedResults.title
                     Layout.topMargin: 10
                 }
 
@@ -243,7 +242,7 @@ Item {
                 Repeater {
                     id: resultsRepeater
                     // Use processedResults for display
-                    model: root.processedResults ? root.processedResults.questions : []
+                    model: root.processedResults.questions
 
                     delegate: Rectangle {
                         Layout.fillWidth: true
@@ -251,7 +250,8 @@ Item {
                         color: "#1f1f1f"
                         radius: 5
                         Layout.bottomMargin: 10
-
+                        id: resultContent
+                        required property var modelData
                         property var questionObj: modelData
 
                         Column {
@@ -266,7 +266,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "Q: " + (questionObj.question || "")
+                                text: "Q: " + (resultContent.questionObj.question)
                                 font.pixelSize: 14
                                 color: "#e5e7eb"
                                 wrapMode: Text.Wrap
@@ -274,7 +274,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "You: " + (questionObj.self || "No answer")
+                                text: "You: " + (resultContent.questionObj.self || "No answer")
                                 font.pixelSize: 14
                                 color: "white"
                                 font.bold: true
@@ -284,7 +284,7 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "Partner: " + (questionObj.partner || "No answer")
+                                text: "Partner: " + (resultContent.questionObj.partner || "No answer")
                                 font.pixelSize: 14
                                 color: "#ec4899"
                                 font.bold: true
@@ -294,30 +294,30 @@ Item {
 
                             Text {
                                 width: parent.width
-                                text: "Your Guess: " + (questionObj.yourGuess || "No guess") 
+                                text: "Your Guess: " + (resultContent.questionObj.yourGuess || "No guess") 
                                 font.pixelSize: 14
                                 color: {
-                                    if (!questionObj.yourGuess || questionObj.yourGuess === "No guess") return "#9ca3af"; 
-                                    return questionObj.guessCorrect ? "#4ade80" : "#f87171"; 
+                                    if (!resultContent.questionObj.yourGuess || resultContent.questionObj.yourGuess === "No guess") return "#9ca3af"; 
+                                    return resultContent.questionObj.yourGuessCorrect ? "#4ade80" : "#f87171"; 
                                 }
                                 font.bold: true
                                 wrapMode: Text.Wrap
                                 topPadding: 2
-                                visible: questionObj.hasOwnProperty('yourGuess') 
+                                visible: resultContent.questionObj.hasOwnProperty('yourGuess') 
                             }
 
                             Text {
                                 width: parent.width
-                                text: "Partners Guess: " + (questionObj.partnerGuessAboutSelf || "No guess") 
+                                text: "Partners Guess: " + (resultContent.questionObj.partnerGuessAboutSelf || "No guess") 
                                 font.pixelSize: 14
                                 color: {
-                                    if (!questionObj.partnerGuessAboutSelf || questionObj.partnerGuessAboutSelf === "No guess") return "#9ca3af"; 
-                                    return questionObj.partnerGuessCorrect ? "#4ade80" : "#f87171"; 
+                                    if (!resultContent.questionObj.partnerGuessAboutSelf || resultContent.questionObj.partnerGuessAboutSelf === "No guess") return "#9ca3af"; 
+                                    return resultContent.questionObj.partnerGuessCorrect ? "#4ade80" : "#f87171"; 
                                 }
                                 font.bold: true
                                 wrapMode: Text.Wrap
                                 topPadding: 2
-                                visible: questionObj.hasOwnProperty('partnerGuessAboutSelf') 
+                                visible: resultContent.questionObj.hasOwnProperty('partnerGuessAboutSelf') 
                             }
                         }
                     }
@@ -332,11 +332,12 @@ Item {
                            const total = root.processedResults.totalQuestions;
                            const yourScore = root.processedResults.yourCorrectGuesses;
                            const partnerScore = root.processedResults.partnerCorrectGuesses;
-                           let scoreString = "Your Guesses Correct: " + yourScore + "/" + total;
-                           if(root.processedResults.partnerDidntAnswer){
-                                scoreString += "\\nPartner hasn\\'t answered yet.";
+                           let scoreString = "";
+                           if (!root.processedResults.partnerDidntAnswer) {
+                               scoreString = "Your Guesses Correct: " + yourScore + "/" + total;
+                               scoreString += "\nPartner's Guesses Correct: " + partnerScore + "/" + total;
                            } else {
-                                scoreString += "\\nPartner\\'s Guesses Correct: " + partnerScore + "/" + total;
+                               scoreString = "Partner hasn't answered yet.";
                            }
                            return scoreString;
                         }
