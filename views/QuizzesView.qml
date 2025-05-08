@@ -255,7 +255,6 @@ Item {
             completedQuizData: root.completedQuizData
             onAcknowledged: {
                 root.completionAcknowledged()
-                root.currentQuizState = "no_available";
             }
         }
 
