@@ -52,24 +52,34 @@ ApplicationWindow {
         currentIndex: {
             switch (window.currentView) {
             case "hub":
+                bottomNavigation.activeTab = "hub"
                 return 0
             case "quizzes":
+                bottomNavigation.activeTab = "quizzes"
                 return 1
             case "daily-question":
+                bottomNavigation.activeTab = "daily-question"
                 return 2
             case "date-ideas":
+                bottomNavigation.activeTab = "date-ideas"
                 return 3
             case "linker":
+                bottomNavigation.activeTab = "linker"
                 return 4
             case "login":
+                bottomNavigation.activeTab = "login"
                 return 5
             case "profile":
+                bottomNavigation.activeTab = "profile"
                 return 6
             case "register":
+                bottomNavigation.activeTab = "register"
                 return 7
             case "quizHistoryDetail":
+                bottomNavigation.activeTab = "quizHistoryDetail"
                 return 8
             default:
+                bottomNavigation.activeTab = "none"
                 return 0
             }
         }
