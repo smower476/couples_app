@@ -81,7 +81,7 @@ Item {
     Connections {
         target: root
         function onJwtTokenChanged() {
-            if (userLinkCode === "Loading..." || userLinkCode === "Login Required" || userLinkCode === "Error") {
+            if (jwtToken !== "") {
                  fetchLinkCode();
             }
         }
@@ -326,6 +326,49 @@ Item {
                     wrapMode: Text.Wrap
                     Layout.maximumWidth: 300
                     Layout.alignment: Qt.AlignHCenter
+                }
+
+                // Unlink button
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 50
+                    Layout.maximumWidth: 300
+                    Layout.alignment: Qt.AlignHCenter
+                    color: "#ef4444" // Red color for error/unlink
+                    radius: 8
+                    visible: root.partnerLinked // Only visible when linked
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Unlink Partner"
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: "white"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (root.jwtToken !== "") {
+                                CallAPI.unlinkUsersApi(root.jwtToken, function(success, result) {
+                                    if (success) {
+                                        //console.log("Successfully unlinked.");
+                                        root.partnerLinked = false;
+                                        root.partnerName = "";
+                                        root.inviteCode = ""; // Clear invite code field
+                                        root.userLinkCode = "Loading..."; // Reset user link code
+                                        fetchLinkCode(); // Fetch new link code
+                                        root.errorMessage = "Successfully unlinked from partner.";
+                                    } else {
+                                        //console.error("Failed to unlink:", result);
+                                        root.errorMessage = "Failed to unlink: " + (result && result.message ? result.message : result);
+                                    }
+                                });
+                            } else {
+                                root.errorMessage = "Cannot unlink: User not logged in.";
+                            }
+                        }
+                    }
                 }
             }
         }

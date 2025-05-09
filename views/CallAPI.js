@@ -472,4 +472,32 @@ function setUserInfo(token, moodScale, moodStatus, callback) {
     xhr.send(params);
 }
 
+function unlinkUsersApi(token, callback) {
+    var xhr = new XMLHttpRequest();
+    var url = API_BASE_URL + "/unlink-users";
+    var params = "token=" + encodeURIComponent(token);
+
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                //console.log("Users unlinked successfully:", xhr.responseText);
+                callback(true, xhr.responseText); // Success
+            } else {
+                //console.error("Unlink users error:", xhr.status, xhr.responseText);
+                callback(false, "Failed to unlink users: " + xhr.responseText); // Failure
+            }
+        }
+    };
+
+    xhr.onerror = function(e) {
+        //console.error("unlinkUsersApi: onerror triggered. Network or CORS error.", e);
+        callback(false, { status: 0, message: "Network error or CORS issue (onerror triggered)." });
+    };
+
+    xhr.send(params);
+}
+
 // --- End Login/Register Functions ---
