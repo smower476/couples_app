@@ -1,12 +1,10 @@
-const API_BASE_URL = "http://129.158.234.85:8081"; // Define base URL
+
 
 function wrapNumberFieldsInQuotes(responseText) {
-    // This regex finds a quoted key, followed by optional whitespace, a colon,
-    // then captures one or more digits, and asserts that the digits are followed
-    // by a comma, closing brace, or closing bracket (to avoid matching numbers in strings).
     const regex = /"(\w+)":\s*(\d+)(?=[,\}\]])/g;
     return responseText.replace(regex, '"$1": "$2"');
 }
+
 
 function getDailyQuizId(token, callback) {
     getAnsweredQuizzes(token, function(success, answeredQuizzes) {
@@ -31,7 +29,7 @@ function getDailyQuizId(token, callback) {
             }
 
             var xhr = new XMLHttpRequest();
-            var url = API_BASE_URL + "/get-unanswered-quizzes-for-pair";
+            var url = window.aPI_BASE_URL + "/get-unanswered-quizzes-for-pair";
             var params = "token=" + encodeURIComponent(token);
 
             xhr.open("POST", url, true);
@@ -78,7 +76,7 @@ function getDailyQuizId(token, callback) {
 
 function getAnsweredQuizzes(token, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-answered-quizes";
+    var url = window.aPI_BASE_URL + "/get-answered-quizes";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true);
@@ -123,7 +121,7 @@ function getAnsweredQuizzes(token, callback) {
 
 function getQuizContent(token, quizId, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-quiz-content";
+    var url = window.aPI_BASE_URL + "/get-quiz-content";
     var params = "token=" + encodeURIComponent(token) + "&quiz_id=" + encodeURIComponent(quizId);
     //console.log(params);
 
@@ -186,7 +184,7 @@ function getQuizzQuestionAndAnswer(callback, apiKey) {
 
 function registerUser(username, password, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/add-user";
+    var url = window.aPI_BASE_URL + "/add-user";
     var params = "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
 
     xhr.open("POST", url, true);
@@ -212,7 +210,7 @@ function registerUser(username, password, callback) {
 
 function loginUser(username, password, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/login";
+    var url = window.aPI_BASE_URL + "/login";
     var params = "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
 
     xhr.open("POST", url, true);
@@ -235,7 +233,7 @@ xhr.send(params);
 
 function getLinkCode(token, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-link-code";
+    var url = window.aPI_BASE_URL + "/get-link-code";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true);
@@ -273,7 +271,7 @@ function getLinkCode(token, callback) {
 
 function linkUsers(token, linkCode, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/link-users";
+    var url = window.aPI_BASE_URL + "/link-users";
     var params = "token=" + encodeURIComponent(token) + "&link_code=" + encodeURIComponent(linkCode);
 
     xhr.open("POST", url, true);
@@ -335,7 +333,7 @@ function answerQuiz(token, quizId, selfAnswers, partnerGuesses, callback) {
     //console.log("Combined Binary:", combinedBinaryString, "-> Base 10:", base10CombinedAnswer);
 
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/answer-quiz";
+    var url = window.aPI_BASE_URL + "/answer-quiz";
     // Send only the combined answer as the 'answer' parameter
     var params = "token=" + encodeURIComponent(token) +
                  "&quiz_id=" + encodeURIComponent(quizId) +
@@ -363,7 +361,7 @@ function answerQuiz(token, quizId, selfAnswers, partnerGuesses, callback) {
 
 function getPartnerInfo(token, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-partner-info";
+    var url = window.aPI_BASE_URL + "/get-partner-info";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true); // Changed to POST method based on working shell script
@@ -399,8 +397,10 @@ function getPartnerInfo(token, callback) {
 }
 
 function getUserInfo(token, callback) {
+    console.log("window.aPI_BASE_URL:", window.aPI_BASE_URL);
+    
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/get-user-info";
+    var url = window.aPI_BASE_URL + "/get-user-info";
     var params = "token=" + encodeURIComponent(token);
 
     xhr.open("POST", url, true);
@@ -434,7 +434,7 @@ function getUserInfo(token, callback) {
 
 function setUserInfo(token, moodScale, moodStatus, callback) {
     var xhr = new XMLHttpRequest();
-    var url = API_BASE_URL + "/set-user-info";
+    var url = window.aPI_BASE_URL + "/set-user-info";
     var params = "token=" + encodeURIComponent(token);
     
     // Add mood_scale parameter if provided

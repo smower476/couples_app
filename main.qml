@@ -15,6 +15,7 @@ ApplicationWindow {
     visible: true
     title: "Couples App"
     color: "#121212"
+    property string aPI_BASE_URL: "http://129.158.234.85:8081"
     Settings {
         id: appSettings
         property string savedJwtToken: ""
@@ -230,10 +231,16 @@ ApplicationWindow {
         activeTab: window.currentView
 
         onTabSelected: function (tabName) {
-            if (window.isLoggedIn || tabName === "hub") {
-                 window.currentView = tabName
+            if (window.isLoggedIn) {
+                if (tabName === "hub" || tabName === "linker" || linkerView.partnerLinked) {
+                    window.currentView = tabName;
+                } else {
+                    // Logged in, not linked, selected tab is not hub or linker
+                    window.currentView = "linker";
+                }
             } else {
-                window.currentView = "login"
+                // Not logged in
+                window.currentView = "login";
             }
         }
     }
