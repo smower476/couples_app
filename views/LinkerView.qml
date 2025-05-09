@@ -81,8 +81,19 @@ Item {
     Connections {
         target: root
         function onJwtTokenChanged() {
-            if (userLinkCode === "Loading..." || userLinkCode === "Login Required" || userLinkCode === "Error") {
-                 fetchLinkCode();
+            console.log("LinkerView: jwtToken changed. Resetting linked status and fetching new link code.");
+            // Reset linked status and partner info immediately on token change
+            root.partnerLinked = false;
+            root.partnerName = "";
+            root.userLinkCode = "Loading..."; // Reset to initial state
+            root.errorMessage = "";
+
+            if (root.jwtToken) {
+                 fetchLinkCode(); // Fetch new link code for the new token
+            } else {
+                console.log("LinkerView: jwtToken cleared. Setting link code to Login Required.");
+                root.userLinkCode = "Login Required"; // Indicate user needs to be logged in
+                root.errorMessage = "Please log in first to get your invite code.";
             }
         }
     }
@@ -326,6 +337,49 @@ Item {
                     wrapMode: Text.Wrap
                     Layout.maximumWidth: 300
                     Layout.alignment: Qt.AlignHCenter
+                }
+
+                // Unlink button
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 50
+                    Layout.maximumWidth: 300
+                    Layout.alignment: Qt.AlignHCenter
+                    color: "#ef4444" // Red color for error/unlink
+                    radius: 8
+                    visible: root.partnerLinked // Only visible when linked
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Unlink Partner"
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: "white"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (root.jwtToken !== "") {
+                                CallAPI.unlinkUsersApi(root.jwtToken, function(success, result) {
+                                    if (success) {
+                                        //console.log("Successfully unlinked.");
+                                        root.partnerLinked = false;
+                                        root.partnerName = "";
+                                        root.inviteCode = ""; // Clear invite code field
+                                        root.userLinkCode = "Loading..."; // Reset user link code
+                                        fetchLinkCode(); // Fetch new link code
+                                        root.errorMessage = "Successfully unlinked from partner.";
+                                    } else {
+                                        //console.error("Failed to unlink:", result);
+                                        root.errorMessage = "Failed to unlink: " + (result && result.message ? result.message : result);
+                                    }
+                                });
+                            } else {
+                                root.errorMessage = "Cannot unlink: User not logged in.";
+                            }
+                        }
+                    }
                 }
             }
         }
