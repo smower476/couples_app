@@ -231,7 +231,7 @@ ApplicationWindow {
         activeTab: window.currentView
 
         onTabSelected: function (tabName) {
-            if (window.isLoggedIn) {
+            if (tabName === "hub" || window.isLoggedIn) {
                 if (tabName === "hub" || tabName === "linker" || linkerView.partnerLinked) {
                     window.currentView = tabName;
                 } else {
