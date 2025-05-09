@@ -270,148 +270,91 @@ Item {
                 }
             }
             
-            // // Daily Questions Section
-            // Rectangle {
-            //     Layout.fillWidth: true
-            //     Layout.margins: 16
-            //     Layout.preferredHeight: dailyQuestionsColumn.height + 32
-            //     color: "#1f1f1f" // gray-800
-            //     radius: 8
-                
-            //     ColumnLayout {
-            //         id: dailyQuestionsColumn
-            //         anchors {
-            //             left: parent.left
-            //             right: parent.right
-            //             top: parent.top
-            //             margins: 16
-            //         }
-            //         spacing: 8
-                    
-            //         Text {
-            //             text: "❓ Daily Questions"
-            //             font.pixelSize: 18
-            //             font.bold: true
-            //             color: "white"
-            //         }
-                    
-            //         // Daily questions history
-            //         Repeater {
-            //             model: root.dailyResponses
-                        
-            //             delegate: ColumnLayout {
-            //                 Layout.fillWidth: true
-            //                 spacing: 4
-                            
-            //                 Text {
-            //                     text: modelData.date
-            //                     font.pixelSize: 14
-            //                     color: "#ec4899" // pink-500
-            //                 }
-                            
-            //                 Text {
-            //                     text: modelData.question
-            //                     font.pixelSize: 16
-            //                     color: "white"
-            //                     wrapMode: Text.Wrap
-            //                 }
-                            
-            //                 Text {
-            //                     text: modelData.response
-            //                     font.pixelSize: 14
-            //                     color: "#9ca3af" // gray-400
-            //                     wrapMode: Text.Wrap
-            //                 }
-                            
-            //                 Rectangle {
-            //                     Layout.fillWidth: true
-            //                     Layout.preferredHeight: 1
-            //                     color: "#4b5563" // gray-600
-            //                     visible: index < root.dailyResponses.length - 1
-            //                 }
-            //             }
-            //         }
-                    
-            //         Text {
-            //             text: root.dailyResponses.length === 0 ? "No daily questions answered yet" : ""
-            //             font.pixelSize: 14
-            //             color: "#9ca3af" // gray-400
-            //             visible: root.dailyResponses.length === 0
-            //         }
-            //     }
-            // }
-            
-            // // Date Ideas History Section
-            // Rectangle {
-            //     Layout.fillWidth: true
-            //     Layout.margins: 16
-            //     Layout.preferredHeight: dateIdeasColumn.height + 32
-            //     color: "#1f1f1f" // gray-800
-            //     radius: 8
-                
-            //     ColumnLayout {
-            //         id: dateIdeasColumn
-            //         anchors {
-            //             left: parent.left
-            //             right: parent.right
-            //             top: parent.top
-            //             margins: 16
-            //         }
-            //         spacing: 8
-                    
-            //         Text {
-            //             text: "🌟 Date Ideas History"
-            //             font.pixelSize: 18
-            //             font.bold: true
-            //             color: "white"
-            //         }
-                    
-            //         // Date ideas history
-            //         Repeater {
-            //             model: root.dateIdeasHistory
-                        
-            //             delegate: ColumnLayout {
-            //                 Layout.fillWidth: true
-            //                 spacing: 4
-                            
-            //                 Text {
-            //                     text: modelData.date
-            //                     font.pixelSize: 14
-            //                     color: "#ec4899" // pink-500
-            //                 }
-                            
-            //                 Text {
-            //                     text: modelData.idea + " - " + modelData.response
-            //                     font.pixelSize: 16
-            //                     color: "white"
-            //                     wrapMode: Text.Wrap
-            //                 }
-                            
-            //                 Rectangle {
-            //                     Layout.fillWidth: true
-            //                     Layout.preferredHeight: 1
-            //                     color: "#4b5563" // gray-600
-            //                     visible: index < root.dateIdeasHistory.length - 1
-            //                 }
-            //             }
-            //         }
-                    
-            //         Text {
-            //             text: root.dateIdeasHistory.length === 0 ? "No date ideas rated yet" : ""
-            //             font.pixelSize: 14
-            //             color: "#9ca3af" // gray-400
-            //             visible: root.dateIdeasHistory.length === 0
-            //         }
-            //     }
-            // }
-            
+
+
+            // Server Toggle Card
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.margins: 16
+                Layout.preferredHeight: 80 // Adjust height as needed
+                color: "#1f1f1f" // gray-800
+                radius: 8
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 16
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        id: serverStatusText
+                        Layout.fillWidth: true
+                        text: "Current server: Development" // Initial text
+                        font.pixelSize: 16
+                        color: "white"
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    Switch {
+                        id: serverToggle
+                        Layout.preferredWidth: 51 // iPhone toggle width
+                        Layout.preferredHeight: 31 // iPhone toggle height
+                        Layout.alignment: Qt.AlignVCenter
+                        checked: true // Set to true to be on by default
+
+                        // Custom styling for iPhone look
+                        indicator: Rectangle {
+                            implicitWidth: 27 // Thumb size
+                            implicitHeight: 27
+                            x: parent.checked ? parent.width - width - 2 : 2 // Animate position
+                            y: 2
+                            radius: width / 2 // Make it round
+                            color: "white"
+                            border.color: "#e0e0e0" // Light gray border
+                            border.width: 1
+                            antialiasing: true
+
+                            Behavior on x {
+                                NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+                            }
+                        }
+
+                        background: Rectangle {
+                            implicitWidth: 51 // Track width
+                            implicitHeight: 31 // Track height
+                            radius: height / 2 // Rounded track
+                            color: parent.checked ? "#34c759" : "#787880" // Green when checked, gray when unchecked
+                            antialiasing: true
+
+                            Behavior on color {
+                                ColorAnimation { duration: 200 }
+                            }
+                        }
+
+                        onCheckedChanged: {
+                            if (checked) {
+                                // On state: Production
+                                window.aPI_BASE_URL = "http://129.158.234.85:8081";
+                                serverStatusText.text = "Current server: Production";
+                            } else {
+                                // Off state: Development
+                                window.aPI_BASE_URL = "http://129.158.234.85:8080";
+                                serverStatusText.text = "Current server: Development";
+                            }
+                            console.log("API Base URL changed to:", window.aPI_BASE_URL);
+                        }
+                    }
+                }
+            }
+
+
             // Bottom padding
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 20
             }
         }
-        
+
         Component.onCompleted: {
             //console.log("HubView: Component onCompleted. Fetching answered quizzes.");
             fetchAnsweredQuizzes();

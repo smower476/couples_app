@@ -15,6 +15,7 @@ ApplicationWindow {
     visible: true
     title: "Couples App"
     color: "#121212"
+    property string aPI_BASE_URL: "http://129.158.234.85:8081"
     Settings {
         id: appSettings
         property string savedJwtToken: ""
@@ -52,24 +53,34 @@ ApplicationWindow {
         currentIndex: {
             switch (window.currentView) {
             case "hub":
+                bottomNavigation.activeTab = "hub"
                 return 0
             case "quizzes":
+                bottomNavigation.activeTab = "quizzes"
                 return 1
             case "daily-question":
+                bottomNavigation.activeTab = "daily-question"
                 return 2
             case "date-ideas":
+                bottomNavigation.activeTab = "date-ideas"
                 return 3
             case "linker":
+                bottomNavigation.activeTab = "linker"
                 return 4
             case "login":
+                bottomNavigation.activeTab = "login"
                 return 5
             case "profile":
+                bottomNavigation.activeTab = "profile"
                 return 6
             case "register":
+                bottomNavigation.activeTab = "register"
                 return 7
             case "quizHistoryDetail":
+                bottomNavigation.activeTab = "quizHistoryDetail"
                 return 8
             default:
+                bottomNavigation.activeTab = "none"
                 return 0
             }
         }
@@ -220,10 +231,16 @@ ApplicationWindow {
         activeTab: window.currentView
 
         onTabSelected: function (tabName) {
-            if (window.isLoggedIn || tabName === "hub") {
-                 window.currentView = tabName
+            if (window.isLoggedIn) {
+                if (tabName === "hub" || tabName === "linker" || linkerView.partnerLinked) {
+                    window.currentView = tabName;
+                } else {
+                    // Logged in, not linked, selected tab is not hub or linker
+                    window.currentView = "linker";
+                }
             } else {
-                window.currentView = "login"
+                // Not logged in
+                window.currentView = "login";
             }
         }
     }

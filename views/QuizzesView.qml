@@ -87,6 +87,13 @@ Item {
                     });
                 } else {
                     console.log("QuizzesView: Quiz is current. ID:", root.currentQuizId);
+                    root.quizCompleted = false;
+                    root.completedQuizData = null;
+                    root.currentQuizState = "current";
+                    root.currentQuizAnswers = new Array(root.quizData.questions.length).fill(0);
+                    root.partnerGuesses = new Array(root.quizData.questions.length).fill(0);
+                    root.quizPhase = "answeringSelf";
+                    root.questionIndex = 0;
                 }
             } else {
                 console.error("QuizzesView: Failed to check for quiz updates. Error:", quizIdOrError);

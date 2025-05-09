@@ -81,8 +81,19 @@ Item {
     Connections {
         target: root
         function onJwtTokenChanged() {
-            if (jwtToken !== "") {
-                 fetchLinkCode();
+            console.log("LinkerView: jwtToken changed. Resetting linked status and fetching new link code.");
+            // Reset linked status and partner info immediately on token change
+            root.partnerLinked = false;
+            root.partnerName = "";
+            root.userLinkCode = "Loading..."; // Reset to initial state
+            root.errorMessage = "";
+
+            if (root.jwtToken) {
+                 fetchLinkCode(); // Fetch new link code for the new token
+            } else {
+                console.log("LinkerView: jwtToken cleared. Setting link code to Login Required.");
+                root.userLinkCode = "Login Required"; // Indicate user needs to be logged in
+                root.errorMessage = "Please log in first to get your invite code.";
             }
         }
     }
