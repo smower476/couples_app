@@ -17,14 +17,84 @@ Item {
 
     property string quizPhase: "answeringSelf"
     property string jwtToken: ""
+    property string currentQuizId: "" // Added property to track current quiz ID
+
+    signal completionAcknowledged()
 
     signal completionAcknowledged()
 
     property bool quizCompleted: false
     property var completedQuizData: null
     property string currentQuizState: "loading"
+    property bool isVisible: false // Track visibility of the view
 
+    Timer {
+        id: updateTimer
+        interval: 10*1000*60 // Check every 5 seconds when view is visible
+        repeat: true
+        running: root.isVisible && root.jwtToken && root.jwtToken !== ""
+        onTriggered: {
+            root.checkForQuizUpdates();
+        }
+    }
 
+    // Added function for silently checking quiz updates
+    function checkForQuizUpdates() {
+        console.log("QuizzesView: Checking for quiz updates...");
+        if (!root.jwtToken || root.jwtToken === "") {
+            return;
+        }
+        CallAPI.getDailyQuizId(root.jwtToken, function(success, quizIdOrError) {
+            if (success) {
+                if (quizIdOrError === "done") {
+                    // Quiz is already completed, nothing to update
+                    return;
+                }
+                // Only if quiz ID is different from current one, fetch new content
+                if (quizIdOrError !== root.currentQuizId) {
+                    console.log("QuizzesView: New quiz available. Old ID:", root.currentQuizId, "New ID:", quizIdOrError);
+                    
+                    CallAPI.getQuizContent(root.jwtToken, quizIdOrError, function(contentSuccess, quizContent) {
+                        if (contentSuccess && quizContent && quizContent.quiz_content && quizContent.quiz_content.length > 0) {
+                            var transformedQuiz = {
+                                id: quizIdOrError,
+                                title: quizContent.quiz_name || "Daily Quiz",
+                                questions: quizContent.quiz_content.map((item, index) => {
+                                    return {
+                                        question: item.content_data,
+                                        options: item.answers.map(ans => ans.answer_content),
+                                        _answers: item.answers,
+                                        _content_id: item.content_id
+                                    };
+                                })
+                            };
+                            
+                            // Update quiz and reset state since it's a different quiz
+                            root.quizData = transformedQuiz;
+                            root.currentQuizId = quizIdOrError;
+                            const numQuestions = transformedQuiz.questions.length;
+                            root.currentQuizAnswers = new Array(numQuestions).fill(0);
+                            root.partnerGuesses = new Array(numQuestions).fill(0);
+                            root.quizPhase = "answeringSelf";
+                            root.questionIndex = 0;
+                            
+                            if (root.currentQuizState === "loading" || root.currentQuizState === "no_available") {
+                                root.currentQuizState = "current";
+                            }
+                            
+                            console.log("QuizzesView: Updated to new quiz ID:", quizIdOrError);
+                        } else {
+                            console.error("QuizzesView: Failed to get content for new quiz. ID:", quizIdOrError);
+                        }
+                    });
+                } else {
+                    console.log("QuizzesView: Quiz is current. ID:", root.currentQuizId);
+                }
+            } else {
+                console.error("QuizzesView: Failed to check for quiz updates. Error:", quizIdOrError);
+            }
+        });
+    }
 
     function fetchDailyQuiz() {
         root.currentQuizState = "loading";
@@ -43,6 +113,7 @@ Item {
                     })
                 };
                 root.quizData = transformedQuiz;
+                root.currentQuizId = quizId; // Store the quiz ID
                 const numQuestions = transformedQuiz.questions.length;
                 root.currentQuizAnswers = new Array(numQuestions).fill(0);
                 root.partnerGuesses = new Array(numQuestions).fill(0);
@@ -53,6 +124,7 @@ Item {
             } else {
                 console.log("QuizzesView: No valid quiz content received for quizId:", quizId, "Setting state to no_available.");
                 root.quizData = null;
+                root.currentQuizId = ""; // Clear the quiz ID
                 root.currentQuizState = "no_available";
             }
         });
@@ -217,6 +289,13 @@ Item {
             fetchDailyQuiz();
         } else {
             root.currentQuizState = "no_available";
+        }
+    }
+    
+    onVisibleChanged: {
+        root.isVisible = visible;
+        if (visible && root.jwtToken && root.jwtToken !== "") {
+            root.checkForQuizUpdates();
         }
     }
 }
