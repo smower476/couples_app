@@ -21,11 +21,9 @@ Item {
     Connections {
         target: root
         function onRawAnsweredQuizDataChanged() {
-            console.log("QuizHistoryDetailView: rawAnsweredQuizData changed. Re-fetching data.");
             fetchAndTransformQuizData();
         }
         function onJwtTokenChanged() {
-            console.log("QuizHistoryDetailView: jwtToken changed. Re-fetching data if raw data exists.");
             if (root.rawAnsweredQuizData) { // Only refetch if we have quiz data
                 fetchAndTransformQuizData();
             }
@@ -61,8 +59,6 @@ Item {
 
     // Function to fetch quiz content and transform answered quiz data for display
     function fetchAndTransformQuizData() {
-        console.log("QuizHistoryDetailView: fetchAndTransformQuizData called.");
-        console.log("QuizHistoryDetailView: rawAnsweredQuizData:", JSON.stringify(root.rawAnsweredQuizData));
         if (!root.jwtToken || !root.rawAnsweredQuizData || !root.rawAnsweredQuizData.id) {
             console.error("QuizHistoryDetailView: Cannot fetch/transform data. Missing token or raw data.");
             root.transformedQuizData = null; // Ensure data is null if prerequisites are missing
@@ -71,14 +67,10 @@ Item {
 
         const completedQuizId = root.rawAnsweredQuizData.id;
         const quizName = root.rawAnsweredQuizData.quiz_name || "Completed Quiz Results";
-        console.log("QuizHistoryDetailView: Fetching content for quiz ID:", completedQuizId, "with token:", root.jwtToken);
 
         CallAPI.getQuizContent(root.jwtToken, completedQuizId, function(success, quizContent) {
-            console.log("QuizHistoryDetailView: CallAPI.getQuizContent callback received. Success:", success);
-            console.log("QuizHistoryDetailView: Received quizContent:", JSON.stringify(quizContent));
             if (success && quizContent && quizContent.quiz_content) {
                 const questionCount = quizContent.quiz_content.length;
-                console.log("QuizHistoryDetailView: Quiz content fetched successfully. Question count:", questionCount);
                 let selfAnswers = [];
                 let partnerAnswers = [];
                 let yourGuesses = []; // Array to hold decoded guesses about partner's answers
@@ -87,7 +79,6 @@ Item {
                 let yourCorrectGuesses = 0; // Counter for your correct guesses about partner's answers
 
                 // Decode combined self answers and guesses from self_answer field
-                console.log("DEBUG: self_answer (raw combined):", root.rawAnsweredQuizData.self_answer);
                 if (root.rawAnsweredQuizData.self_answer !== null && root.rawAnsweredQuizData.self_answer !== undefined) {
                      // Decode expecting data for questionCount * 2 items
                     const combinedDecoded = decodeAnswers(root.rawAnsweredQuizData.self_answer, questionCount * 2);
@@ -99,12 +90,9 @@ Item {
                     selfAnswers = new Array(questionCount).fill(0);
                     yourGuesses = new Array(questionCount).fill(0);
                 }
-                console.log("DEBUG: self_answer (decoded):", JSON.stringify(selfAnswers));
-                console.log("DEBUG: your_guesses (decoded):", JSON.stringify(yourGuesses));
 
 
                 // Decode combined partner answers and guesses from partner_answer field
-                console.log("DEBUG: partner_answer (raw combined):", root.rawAnsweredQuizData.partner_answer);
                 let partnerDidntAnswer = root.rawAnsweredQuizData.partner_answer === null || root.rawAnsweredQuizData.partner_answer === "null" || root.rawAnsweredQuizData.partner_answer === undefined;
                 if (!partnerDidntAnswer) {
                     // Decode expecting data for questionCount * 2 items
@@ -117,8 +105,6 @@ Item {
                     partnerAnswers = new Array(questionCount).fill(0);
                     partnerGuessesAboutSelf = new Array(questionCount).fill(0);
                 }
-                console.log("DEBUG: partner_answer (decoded):", JSON.stringify(partnerAnswers));
-                console.log("DEBUG: partner_guesses_about_self (decoded):", JSON.stringify(partnerGuessesAboutSelf));
 
 
                 // Calculate correctness
@@ -159,14 +145,11 @@ Item {
                     partnerCorrectGuesses: partnerCorrectGuesses // Total correct guesses partner made
                 };
 
-                console.log("QuizHistoryDetailView: Transformed completed quiz data:", JSON.stringify(transformedResults, null, 2));
                 root.transformedQuizData = transformedResults; // Set the transformed data
-                console.log("QuizHistoryDetailView: root.transformedQuizData set.");
 
             } else {
                 console.error("QuizHistoryDetailView: Failed to fetch quiz content for details or content is empty:", quizContent);
                 root.transformedQuizData = null; // Clear data on failure
-                console.log("QuizHistoryDetailView: root.transformedQuizData set to null.");
             }
         });
     }

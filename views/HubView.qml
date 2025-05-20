@@ -18,29 +18,18 @@ Item {
     
     // Function to fetch answered quizzes
     function fetchAnsweredQuizzes() {
-        console.log("HubView: fetchAnsweredQuizzes called."); // Log function call
-        console.log("HubView: Current jwtToken:", root.jwtToken); // Log current token
 
         if (!root.jwtToken) {
-            console.log("HubView: JWT token not available, cannot fetch answered quizzes. Returning."); // Log early exit
             return;
         }
-        console.log("HubView: JWT token available. Proceeding with API call."); // Log before API call
 
         CallAPI.getAnsweredQuizzes(root.jwtToken, function(success, quizzes) {
-            console.log("HubView: CallAPI.getAnsweredQuizzes callback received."); // Log callback received
-            console.log("HubView: API call success:", success); // Log API call success status
-            console.log("HubView: API call result (quizzes):", JSON.stringify(quizzes)); // Log API call result
 
             if (success) {
-                console.log("HubView: Answered quizzes fetched successfully."); // Log success branch
-                // Filter out any null or undefined entries and ensure it's an array
                 root.answeredQuizzesList = Array.isArray(quizzes) ? quizzes.filter(q => q !== null && q !== undefined) : [];
-                console.log("HubView: answeredQuizzesList updated:", JSON.stringify(root.answeredQuizzesList)); // Log updated list
             } else {
                 console.error("HubView: Failed to fetch answered quizzes:", quizzes); // Log failure branch
                 root.answeredQuizzesList = []; // Clear list on failure
-                console.log("HubView: answeredQuizzesList cleared due to failure."); // Log list cleared
             }
         });
     }
@@ -50,11 +39,9 @@ Item {
         target: root
         
         function onJwtTokenChanged() {
-            //console.log("HubView: jwtToken changed. Fetching answered quizzes.");
             if (root.jwtToken) {
                 root.fetchAnsweredQuizzes();
             } else {
-                //console.log("HubView: jwtToken cleared.");
                 root.answeredQuizzesList = []; // Clear list if token is cleared
             }
         }
@@ -155,7 +142,6 @@ Item {
                                         window.showQuizHistoryDetail(modelData); // Pass the raw answered quiz item
                                     } else {
                                         console.error("HubView: window or showQuizHistoryDetail function not available for navigation.");
-                                        console.log("Clicked quiz (data not passed):", JSON.stringify(modelData));
                                     }
                                 }
                             }
@@ -341,7 +327,6 @@ Item {
                                 window.aPI_BASE_URL = "http://129.158.234.85:8080";
                                 serverStatusText.text = "Current server: Development";
                             }
-                            console.log("API Base URL changed to:", window.aPI_BASE_URL);
                         }
                     }
                 }
