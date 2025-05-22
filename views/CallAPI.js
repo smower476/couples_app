@@ -8,7 +8,7 @@ function makeApiRequest(endpoint, params, callback, method = "POST") {
     var url = window.aPI_BASE_URL + endpoint;
 
     xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); 
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -202,11 +202,14 @@ function getLinkCode(token, callback) {
     const endpoint = "/get-link-code";
     const params = "token=" + encodeURIComponent(token);
 
+    console.log("URL: ", endpoint+params)
+
     makeApiRequest(endpoint, params, function(success, responseData) {
         if (success) {
             callback(true, responseData);
         } else {
-            if (responseData.status === 409) {
+            console.log("Status: ", responseData.message)
+            if (responseData.status === 409 || responseData.status === 0) {
                 callback(false, { status: 409, message: "User has already been linked." });
             } else {
                 callback(false, (responseData.message || responseData));

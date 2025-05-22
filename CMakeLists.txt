@@ -29,8 +29,9 @@ set(QML_FILES
     views/LoginRegisterView.qml
     views/RegisterView.qml
     views/CallAPI.js
-    # Commented views that may be used later
-    views/DailyQuestionView.qml
+    views/dailyQuestion/DailyQuestionView.qml
+    views/DailyQuestionStack.qml
+
     views/DateIdeasView.qml
     views/QuizHistoryDetailView.qml
 )

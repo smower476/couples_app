@@ -105,9 +105,9 @@ ApplicationWindow {
             }
         }
 
-        DailyQuestionView {
+        DailyQuestionStack {
             id: dailyQuestionView
-            dailyQuestion: window.dailyQuestion
+            jwtToken: window.jwtToken
 
             onSubmitResponse: function (response, question) {
                 var updatedResponses = window.dailyResponses.slice()
