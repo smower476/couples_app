@@ -30,6 +30,7 @@ set(QML_FILES
     views/RegisterView.qml
     views/CallAPI.js
     views/dailyQuestion/DailyQuestionView.qml
+    views/dailyQuestion/DailyQuestionResult.qml
     views/DailyQuestionStack.qml
 
     views/DateIdeasView.qml

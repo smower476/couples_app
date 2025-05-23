@@ -19,7 +19,7 @@ Item {
         function onJwtTokenChanged() {
             if (root.jwtToken && root.jwtToken !== "") {
                 console.log("JWT Token is set: " + root.jwtToken);
-                root.getDailyQuestion();
+                // root.getDailyQuestion();
             } else {
                 root.quizData = null;
                 root.completedQuizData = null;

@@ -119,6 +119,9 @@ ApplicationWindow {
                                       })
                 window.dailyResponses = updatedResponses
             }
+            onBackToHub: function () {
+                window.currentView = "hub"
+            }
         }
 
         DateIdeasView {

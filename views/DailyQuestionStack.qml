@@ -10,16 +10,17 @@ Item {
     height: parent.height
 
     // Properties
-    property string DailyQuestionResult: ""
-    property string dailyQuestion: ""
-    property string currentResponse: ""
-    property string partnerAnswer: ""
+    property string dailyQuestionResult: ""
+    property string dailyQuestion: "What moment today made you smile?"
+    property string currentResponse: "My partner made me smile today by doing something sweet."
+    property string partnerAnswer: "Your smile made me smile today."
     property string jwtToken: ""
     property string errorMessage: ""
     property string currentView: "dailyQuestion"
     property var parameters: null
     // Signals
     signal submitResponse(string response, string question)
+    signal backToHub()
 
     StackLayout {
         anchors {
@@ -27,7 +28,6 @@ Item {
             right: parent.right
             top: parent.top
             bottom: parent.bottom
-            margins: 16
         }
         id: stackLayout
         currentIndex: {
@@ -35,12 +35,16 @@ Item {
             case "dailyQuestion":
                 return 0
             case "result":
+            try {
                 root.dailyQuestion = root.parameters.question;
                 root.currentResponse = root.parameters.userAnswer;
                 root.partnerAnswer = root.parameters.partnerAnswer;
+            } catch (e) {
+                console.log("Error in parameters: " + e);
+            }
                 return 1
             case "error":
-                root.errorMessage = root.parameters.errorMessage;
+                // root.errorMessage = root.parameters.errorMessage;
                 return 2
             default:
                 return 0
@@ -58,7 +62,20 @@ Item {
             }
             onSwitchToDifferentView: function (view, parameters) {
                 root.currentView = view;
-                root.parameters = parameters;
+                // root.parameters = parameters;
+            }
+        }
+        DailyQuestionResult {
+            id: dailyQuestionResult
+            dailyQuestion: root.dailyQuestion
+            userResponse: root.currentResponse
+            partnerAnswer: root.partnerAnswer
+            onSwitchToDifferentView: function (view) {
+                if (view === "hub") {
+                    root.backToHub();
+                } else {
+                    root.currentView = view;
+                }
             }
         }
     }
