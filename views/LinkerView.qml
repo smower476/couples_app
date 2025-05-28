@@ -1,13 +1,11 @@
+import "CallAPI.js" as CallAPI // Import the API functions
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "CallAPI.js" as CallAPI // Import the API functions
 
 Item {
     id: root
-    width: parent.width
-    height: parent.height
-    
+
     // Properties
     property bool partnerLinked: false
     property string inviteCode: ""
@@ -15,6 +13,7 @@ Item {
     property string userLinkCode: "Loading..." // Property to hold the fetched link code
     property string errorMessage: "" // Property to hold error messages
     property string partnerName: "" // Property to hold the partner's name
+    property bool isVisible: false // Track visibility of the component
 
     // Signals
     signal linkPartner()
@@ -38,65 +37,131 @@ Item {
                                 errorMessage = "";
                             } else {
                                 //console.error("Failed to get partner info after 409:", partnerResult);
-                                partnerLinked = true; // Still show linked screen even if name fetch fails
-                                partnerName = "Partner"; // Default name
+                                partnerLinked = true;
+                                // Still show linked screen even if name fetch fails
+                                partnerName = "Partner";
+                                // Default name
                                 errorMessage = "Could not fetch partner name.";
                             }
                         });
                     } else if (typeof result === "string" && result.indexOf("409") !== -1) {
                         // fallback for string error
                         //console.log("409 error (string fallback) received in fetchLinkCode. Attempting to fetch partner info."); // Debug statement
-                         CallAPI.getPartnerInfo(jwtToken, function(partnerSuccess, partnerResult) {
+                        CallAPI.getPartnerInfo(jwtToken, function(partnerSuccess, partnerResult) {
                             if (partnerSuccess && partnerResult && partnerResult.username) {
                                 partnerName = partnerResult.username;
                                 partnerLinked = true;
                                 errorMessage = "";
                             } else {
                                 //console.error("Failed to get partner info after 409 string:", partnerResult);
-                                partnerLinked = true; // Still show linked screen even if name fetch fails
-                                partnerName = "Partner"; // Default name
+                                partnerLinked = true;
+                                // Still show linked screen even if name fetch fails
+                                partnerName = "Partner";
+                                // Default name
                                 errorMessage = "Could not fetch partner name.";
-                             }
-                         });
-                     } else {
-                         //console.error("Failed to get link code:", result);
-                         userLinkCode = "Error"; // Display error in UI
-                         errorMessage = "Failed to get link code: " + (result && result.message ? result.message : result);
-                     }
-                 }
-             });
-         } else {
-             //console.log("JWT token not available yet for fetching link code.");
-             userLinkCode = "Login Required"; // Indicate user needs to be logged in
-             errorMessage = "Please log in first to get your invite code.";
-         }
-     }
+                            }
+                        });
+                    } else {
+                        //console.error("Failed to get link code:", result);
+                        userLinkCode = "Error";
+                        // Display error in UI
+                        errorMessage = "Failed to get link code: " + (result && result.message ? result.message : result);
+                    }
+                }
+            });
+        } else {
+            //console.log("JWT token not available yet for fetching link code.");
+            userLinkCode = "Login Required";
+            // Indicate user needs to be logged in
+            errorMessage = "Please log in first to get your invite code.";
+        }
+    }
 
-    // Fetch the code when the component is ready AND token is available
+    // Function to only check connection status without requesting a new link code
+    function checkConnectionStatus() {
+        console.log("Checking connection status with token:", jwtToken);
+        if (jwtToken !== "") {
+            //console.log("Checking connection status with token:", jwtToken)
+            CallAPI.getPartnerInfo(jwtToken, function(success, result) {
+                // Still not connected, no change needed
+                //console.log("Connection check: Still not connected");
+
+                console.log("Connection check result:", success, result);
+                if (success && result && result.username) {
+                    // If not already showing connected state, update UI
+                    if (!partnerLinked || partnerName !== result.username) {
+                        //console.log("Connection check: Partner found:", result.username);
+                        partnerName = result.username;
+                        partnerLinked = true;
+                        errorMessage = "";
+                    }
+                } else if (partnerLinked) {
+                    // Was connected before but now not - partner unlinked
+                    //console.log("Connection check: Partner no longer connected");
+                    partnerLinked = false;
+                    partnerName = "";
+                    userLinkCode = "Loading..."; // Reset user link code
+                    fetchLinkCode(); // Fetch new link code since we're single now
+                    errorMessage = "Your partner has unlinked from you.";
+                } else {
+                }
+            });
+        }
+    }
+
+    width: parent.width
+    height: parent.height
+    // Handle visibility changes
+    onIsVisibleChanged: {
+        console.log("LinkerView visibility changed:", isVisible);
+        if (isVisible)
+            root.checkConnectionStatus(); // Check status when becoming visible
+
+    }
     Component.onCompleted: {
+        isVisible = Qt.binding(function() {
+            return root.visible && root.opacity > 0;
+        });
         fetchLinkCode();
     }
 
     // Also fetch if the token becomes available later
     Connections {
-        target: root
         function onJwtTokenChanged() {
             // Reset linked status and partner info immediately on token change
             root.partnerLinked = false;
             root.partnerName = "";
             root.userLinkCode = "Loading..."; // Reset to initial state
             root.errorMessage = "";
-
             if (root.jwtToken) {
-                 fetchLinkCode(); // Fetch new link code for the new token
+                root.fetchLinkCode(); // Fetch new link code for the new token
             } else {
                 root.userLinkCode = "Login Required"; // Indicate user needs to be logged in
                 root.errorMessage = "Please log in first to get your invite code.";
             }
         }
+
+        target: root
     }
-    
+
+    // Timer for periodic updates while visible
+    Timer {
+        // Only check connection status without requesting a new link code
+
+        id: connectionStatusTimer
+
+        interval: 30000 // 30 seconds
+        repeat: true
+        running: root.isVisible && root.jwtToken && root.jwtToken !== ""
+        onTriggered: {
+            //console.log("Checking connection status");
+            root.checkConnectionStatus();
+        }
+    }
+
     ColumnLayout {
+        spacing: 20
+
         anchors {
             left: parent.left
             right: parent.right
@@ -104,14 +169,13 @@ Item {
             bottom: parent.bottom
             margins: 16
         }
-        spacing: 20
-        
+
         // Header
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 60
             color: "transparent"
-            
+
             Text {
                 anchors.centerIn: parent
                 text: root.partnerLinked ? "💕 Connected" : "🔗 Link Your Partner"
@@ -119,20 +183,21 @@ Item {
                 font.bold: true
                 color: "white"
             }
+
         }
-        
+
         // Content depends on linked status
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+
             // Not linked UI
             ColumnLayout {
                 anchors.centerIn: parent
                 width: parent.width
                 spacing: 20
                 visible: !root.partnerLinked
-                
+
                 // Input field
                 Rectangle {
                     Layout.fillWidth: true
@@ -141,9 +206,10 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     color: "#1f1f1f" // gray-800
                     radius: 8
-                    
+
                     TextField {
                         id: inviteCodeField
+
                         anchors.fill: parent
                         anchors.margins: 4
                         placeholderText: "Enter partner's invite code"
@@ -151,17 +217,18 @@ Item {
                         horizontalAlignment: TextInput.AlignHCenter
                         color: "#9ca3af" // Changed from white to gray color
                         background: null
-                        
                         onTextChanged: {
-                            root.inviteCode = text
-                            root.errorMessage = "" // Clear error message when text changes
+                            root.inviteCode = text;
+                            root.errorMessage = ""; // Clear error message when text changes
                         }
                     }
+
                 }
-                
+
                 // Error message display
                 Text {
                     id: errorText
+
                     text: root.errorMessage
                     color: "#ef4444" // Red color for error
                     font.pixelSize: 14
@@ -171,7 +238,7 @@ Item {
                     wrapMode: Text.Wrap
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 // Link button
                 Rectangle {
                     Layout.fillWidth: true
@@ -180,7 +247,7 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     color: "#ec4899" // pink-600
                     radius: 8
-                    
+
                     Text {
                         anchors.centerIn: parent
                         text: "Link Partner 💑"
@@ -188,7 +255,7 @@ Item {
                         font.bold: true
                         color: "white"
                     }
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
@@ -206,8 +273,10 @@ Item {
                                                 root.linkPartner(); // Emit signal after getting partner name
                                             } else {
                                                 //console.error("Failed to get partner info after linking:", partnerResult);
-                                                root.partnerLinked = true; // Still show linked screen even if name fetch fails
-                                                root.partnerName = "Partner"; // Default name
+                                                root.partnerLinked = true;
+                                                // Still show linked screen even if name fetch fails
+                                                root.partnerName = "Partner";
+                                                // Default name
                                                 root.errorMessage = "Successfully linked, but could not fetch partner name.";
                                                 root.linkPartner(); // Emit signal even if name fetch fails
                                             }
@@ -216,7 +285,7 @@ Item {
                                         //console.error("Failed to link partners:", result);
                                         // Handle 409 error (already linked)
                                         if (result && typeof result === "object" && result.status === 409) {
-                                           //console.log("409 error received in linkUsers. Attempting to fetch partner info."); // Debug statement
+                                            //console.log("409 error received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
                                             // Optionally fetch partner info here too if linking fails due to already linked
                                             CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
@@ -231,7 +300,7 @@ Item {
                                                 }
                                             });
                                         } else if (typeof result === "string" && result.indexOf("409") !== -1) {
-                                           //console.log("409 error (string fallback) received in linkUsers. Attempting to fetch partner info."); // Debug statement
+                                            //console.log("409 error (string fallback) received in linkUsers. Attempting to fetch partner info."); // Debug statement
                                             root.errorMessage = "You are already linked with a partner.";
                                             // Optionally fetch partner info here too if linking fails due to already linked (string fallback)
                                             CallAPI.getPartnerInfo(root.jwtToken, function(partnerSuccess, partnerResult) {
@@ -262,8 +331,9 @@ Item {
                             }
                         }
                     }
+
                 }
-                
+
                 // Your invite code
                 Rectangle {
                     Layout.fillWidth: true
@@ -273,60 +343,65 @@ Item {
                     Layout.topMargin: 40
                     color: "#1f1f1f" // gray-800
                     radius: 8
-                    
+
                     ColumnLayout {
                         anchors.centerIn: parent
                         spacing: 8
-                        
+
                         Text {
                             text: "Your invite code:"
                             font.pixelSize: 14
                             color: "#9ca3af" // gray-400
                             Layout.alignment: Qt.AlignHCenter
                         }
-                        
+
                         Text {
                             id: linkCodeText
+
                             text: root.userLinkCode // Bind to the userLinkCode property
                             font.pixelSize: 24
                             font.bold: true
                             color: "#ec4899" // pink-600
                             Layout.alignment: Qt.AlignHCenter
                         }
-                        
+
                         Text {
                             text: "Share this with your partner"
                             font.pixelSize: 12
                             color: "#9ca3af" // gray-400
                             Layout.alignment: Qt.AlignHCenter
                         }
+
                     }
+
                 }
+
             }
-            
+
             // Linked UI
             ColumnLayout {
                 anchors.centerIn: parent
                 width: parent.width
                 spacing: 20
                 visible: root.partnerLinked
-                
+
                 Image {
                     source: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ec4899' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'/></svg>"
                     Layout.alignment: Qt.AlignHCenter
                     Layout.preferredWidth: 100
                     Layout.preferredHeight: 100
                 }
-                
+
                 Text {
                     id: connectedText // Added ID for easier reference
+
                     text: "Connected with " + root.partnerName // Use the partnerName property
                     font.pixelSize: 24
                     font.bold: true
                     color: "white"
                     Layout.alignment: Qt.AlignHCenter
                 }
-                
+
                 Text {
                     text: "You're now linked! Share moments, take quizzes, and grow together."
                     font.pixelSize: 16
@@ -378,8 +453,13 @@ Item {
                             }
                         }
                     }
+
                 }
+
             }
+
         }
+
     }
+
 }

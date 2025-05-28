@@ -8,10 +8,24 @@ Item {
     id: root
 
     property var responsesList: [] // List of responses to display
+    property bool isVisible: false // Track visibility of the component
 
     width: parent.width
     height: parent.height
     property string jwtToken: ""
+
+    // Auto-refresh when component becomes visible
+    onIsVisibleChanged: {
+        if (isVisible && root.jwtToken && root.jwtToken !== "") {
+            console.log("DateIdeasResults became visible, refreshing data");
+            root.getDateIdeasAnswers();
+        }
+    }
+
+    // Initialize component
+    Component.onCompleted: {
+        isVisible = Qt.binding(function() { return root.visible && root.opacity > 0; });
+    }
 
     Connections {
         function onJwtTokenChanged() {
@@ -90,7 +104,7 @@ Item {
     Text {
         id: resultInfo
 
-        text: responsesList.count > 0 ? "Here are all your responses (" + responsesList.count + ")" : "No responses yet"
+        text: responsesModel.count > 0 ? "Here are all your responses (" + responsesModel.count + ")" : "No responses yet"
         font.pixelSize: 14
         color: "#9ca3af" // gray-400
 
@@ -282,6 +296,18 @@ Item {
 
         }
 
+    }
+
+    // Refresh timer for periodic updates while visible
+    Timer {
+        id: refreshTimer
+        interval: 30000 // 30 seconds
+        repeat: true
+        running: root.isVisible && root.jwtToken && root.jwtToken !== ""
+        onTriggered: {
+            console.log("Auto-refreshing date ideas");
+            root.getDateIdeasAnswers();
+        }
     }
 
 }
