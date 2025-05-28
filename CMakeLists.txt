@@ -78,7 +78,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 # Android-specific configuration
 if(ANDROID)
-    # Setup Android OpenSSL
+
     include(FetchContent)
     FetchContent_Declare(android_openssl
         DOWNLOAD_EXTRACT_TIMESTAMP true
@@ -87,37 +87,17 @@ if(ANDROID)
     FetchContent_MakeAvailable(android_openssl)
     include(${android_openssl_SOURCE_DIR}/android_openssl.cmake)
     add_android_openssl_libraries(${PROJECT_NAME})
-    
-    # Android configuration
-    set(CMAKE_ANDROID_ARCH_ABI arm64-v8a)
-    set(CMAKE_ANDROID_NDK ${ANDROID_NDK})
-    set(CMAKE_ANDROID_SDK ${ANDROID_SDK})
-    set(CMAKE_ANDROID_PACKAGE_NAME ${APP_ID})
-    set(CMAKE_ANDROID_ACTIVITY_NAME "MainActivity")
-    set(CMAKE_ANDROID_VERSION 35)
-    
-    # Copy icon for Android
-    configure_file(${APP_ICON} ${CMAKE_CURRENT_BINARY_DIR}/android/res/drawable/icon.png COPYONLY)
-    
-    # Set Android-specific properties
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        ANDROID_PACKAGE_NAME ${CMAKE_ANDROID_PACKAGE_NAME}
-        ANDROID_ACTIVITY_NAME ${CMAKE_ANDROID_ACTIVITY_NAME}
-        ANDROID_VERSION_CODE 1
+
+    # Setup Android OpenSSL
+    set_target_properties(Couples_App PROPERTIES
+        QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
+        QT_ANDROID_PACKAGE_NAME "com.anton.couplesapp"
+        QT_ANDROID_TARGET_SDK_VERSION 35
+        QT_ANDROID_VERSION_CODE 10
+        QT_ANDROID_VERSION_NAME "1.0"
     )
     
-    # Setup Android manifest
-    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    file(COPY "${CMAKE_SOURCE_DIR}/android/AndroidManifest.xml" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/android")
     
-    # Commented out alternative Android configuration approach
-    # set_target_properties(${PROJECT_NAME} PROPERTIES
-    #     QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
-    #     QT_ANDROID_PACKAGE_NAME "io.anton.couplesapp"
-    #     QT_ANDROID_TARGET_SDK_VERSION 35
-    #     QT_ANDROID_VERSION_CODE 20
-    #     QT_ANDROID_VERSION_NAME "2.0"
-    # )
 endif()
 
 # iOS-specific configuration
