@@ -33,7 +33,9 @@ set(QML_FILES
     views/dailyQuestion/DailyQuestionResult.qml
     views/DailyQuestionStack.qml
 
-    views/DateIdeasView.qml
+    views/DateIdeasStack.qml
+    views/dateIdeas/DateIdeasView.qml
+    views/dateIdeas/DateIdeasResults.qml
     views/QuizHistoryDetailView.qml
 )
 
