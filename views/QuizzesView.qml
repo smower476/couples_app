@@ -38,7 +38,6 @@ Item {
 
     // Added function for silently checking quiz updates
     function checkForQuizUpdates() {
-        console.log("QuizzesView: Checking for quiz updates...");
         if (!root.jwtToken || root.jwtToken === "") {
             return;
         }
@@ -50,7 +49,6 @@ Item {
                 }
                 // Only if quiz ID is different from current one, fetch new content
                 if (quizIdOrError !== root.currentQuizId) {
-                    console.log("QuizzesView: New quiz available. Old ID:", root.currentQuizId, "New ID:", quizIdOrError);
                     
                     CallAPI.getQuizContent(root.jwtToken, quizIdOrError, function(contentSuccess, quizContent) {
                         if (contentSuccess && quizContent && quizContent.quiz_content && quizContent.quiz_content.length > 0) {
@@ -80,13 +78,11 @@ Item {
                                 root.currentQuizState = "current";
                             }
                             
-                            console.log("QuizzesView: Updated to new quiz ID:", quizIdOrError);
                         } else {
                             console.error("QuizzesView: Failed to get content for new quiz. ID:", quizIdOrError);
                         }
                     });
                 } else {
-                    console.log("QuizzesView: Quiz is current. ID:", root.currentQuizId);
                     root.quizCompleted = false;
                     root.completedQuizData = null;
                     root.currentQuizState = "current";
@@ -125,9 +121,7 @@ Item {
                 root.quizPhase = "answeringSelf";
                 root.questionIndex = 0;
                 root.currentQuizState = "current";
-                console.log("Question 1:", root.quizData.questions[0].options)
             } else {
-                console.log("QuizzesView: No valid quiz content received for quizId:", quizId, "Setting state to no_available.");
                 root.quizData = null;
                 root.currentQuizId = ""; // Clear the quiz ID
                 root.currentQuizState = "no_available";
@@ -278,7 +272,6 @@ Item {
         target: root
 
         function onJwtTokenChanged() {
-            console.log("QuizzesView: jwtToken changed to:", root.jwtToken ? "present" : "absent");
             if (root.jwtToken && root.jwtToken !== "") {
                 root.fetchDailyQuiz();
             } else {

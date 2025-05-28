@@ -105,9 +105,9 @@ ApplicationWindow {
             }
         }
 
-        DailyQuestionView {
+        DailyQuestionStack {
             id: dailyQuestionView
-            dailyQuestion: window.dailyQuestion
+            jwtToken: window.jwtToken
 
             onSubmitResponse: function (response, question) {
                 var updatedResponses = window.dailyResponses.slice()
@@ -119,26 +119,28 @@ ApplicationWindow {
                                       })
                 window.dailyResponses = updatedResponses
             }
+            onBackToHub: function () {
+                window.currentView = "hub"
+            }
         }
 
-        DateIdeasView {
+        DateIdeasStack {
             id: dateIdeasView
-            dateIdeas: window.dateIdeas
-            currentIndex: window.dateIdeasIndex
+            jwtToken: window.jwtToken
 
-            onDateIdeaResponse: function (response) {
-                var updatedHistory = window.dateIdeasHistory.slice()
-                updatedHistory.push({
-                                        "idea": window.dateIdeas[window.dateIdeasIndex],
-                                        "response": response,
-                                        "date": new Date().toLocaleDateString()
-                                    })
-                window.dateIdeasHistory = updatedHistory
+            // onDateIdeaResponse: function (response) {
+            //     var updatedHistory = window.dateIdeasHistory.slice()
+            //     updatedHistory.push({
+            //                             "idea": window.dateIdeas[window.dateIdeasIndex],
+            //                             "response": response,
+            //                             "date": new Date().toLocaleDateString()
+            //                         })
+            //     window.dateIdeasHistory = updatedHistory
 
-                if (response === "no") {
-                    window.dateIdeasIndex = (window.dateIdeasIndex + 1) % window.dateIdeas.length
-                }
-            }
+            //     if (response === "no") {
+            //         window.dateIdeasIndex = (window.dateIdeasIndex + 1) % window.dateIdeas.length
+            //     }
+            // }
         }
 
         LinkerView {

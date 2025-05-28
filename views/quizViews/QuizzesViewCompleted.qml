@@ -45,7 +45,6 @@ Item {
     // Function to process the raw data into displayable results
     function processQuizResults() {
         if (!completedQuizData || !completedQuizData.answeredQuizDetails || !completedQuizData.quizContent) {
-            console.log("QuizzesViewCompleted: Insufficient data to process results.");
             root.processedResults = null;
             return;
         }
@@ -155,19 +154,16 @@ Item {
             partnerDidntAnswer: partnerDidntAnswer
         };
         root.processedResults = transformed;
-        console.log("QuizzesViewCompleted: Processed results:", JSON.stringify(transformed, null, 2));
     }
 
     // When completedQuizData changes, re-process it
     onCompletedQuizDataChanged: {
-        console.log("QuizzesViewCompleted: completedQuizData changed, processing...");
         processQuizResults();
     }
     
     // Initialize on component completion if data is already there
     Component.onCompleted: {
         if (completedQuizData) {
-            console.log("QuizzesViewCompleted: Component completed, processing initial data...");
             processQuizResults();
         }
     }
